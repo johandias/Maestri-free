@@ -1,34 +1,145 @@
 """
-Terminal and Process Manager for Maestri Desktop (v2.2).
-Runs real native Windows PowerShell using ConPTY (pywinpty) matching VS Code / Windows Terminal.
+Terminal and Process Manager for Maestri Desktop (v2.3).
+Multiplatform real native PTY support:
+- Windows: Native ConPTY via pywinpty matching VS Code / Windows Terminal.
+- Linux / macOS: Native POSIX PTY via standard library (os.openpty, fcntl, termios, struct).
 Full ANSI/VT escape sequence support, native prompt, real cursor positioning, and UTF-8 encoding.
 """
 import asyncio
+import codecs
 import os
+import shlex
+import signal
+import struct
+import subprocess
 import sys
 import threading
 from typing import Dict, Any, Optional, Callable, List
 
-try:
-    from winpty import PtyProcess
-    HAS_WINPTY = True
-except ImportError:
+IS_WINDOWS = sys.platform.startswith("win")
+DEFAULT_SHELL = "powershell.exe" if IS_WINDOWS else os.environ.get("SHELL", "/bin/bash")
+
+if IS_WINDOWS:
+    try:
+        from winpty import PtyProcess
+        HAS_WINPTY = True
+    except ImportError:
+        HAS_WINPTY = False
+else:
     HAS_WINPTY = False
+    import fcntl
+    import termios
 
 BIN_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), "bin"))
 SESSIONS_LOG_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "sessions"))
 os.makedirs(SESSIONS_LOG_DIR, exist_ok=True)
 
+
+class PosixPtyProcess:
+    """Wrapper around POSIX openpty subprocess matching the PtyProcess interface."""
+    def __init__(self, proc: subprocess.Popen, master_fd: int):
+        self.proc = proc
+        self.master_fd: Optional[int] = master_fd
+        self.pid = proc.pid
+        self._closed = False
+
+    def isalive(self) -> bool:
+        if self._closed or self.proc is None:
+            return False
+        return self.proc.poll() is None
+
+    def read(self, n: int = 4096) -> str:
+        if self._closed or self.master_fd is None:
+            return ""
+        try:
+            chunk = os.read(self.master_fd, n)
+            return chunk.decode("utf-8", errors="replace")
+        except (OSError, EOFError):
+            return ""
+
+    def write(self, data: str | bytes):
+        if self._closed or self.master_fd is None:
+            return
+        chunk = data.encode("utf-8") if isinstance(data, str) else data
+        try:
+            os.write(self.master_fd, chunk)
+        except OSError:
+            pass
+
+    def write_input(self, data: str | bytes):
+        self.write(data)
+
+    def setwinsize(self, rows: int, cols: int):
+        if self._closed or self.master_fd is None:
+            return
+        try:
+            fcntl.ioctl(self.master_fd, termios.TIOCSWINSZ, struct.pack("HHHH", max(1, rows), max(1, cols), 0, 0))
+        except OSError:
+            pass
+
+    def terminate(self):
+        if self._closed:
+            return
+        self._closed = True
+        try:
+            if self.proc and self.proc.poll() is None:
+                try:
+                    os.killpg(self.proc.pid, signal.SIGTERM)
+                except Exception:
+                    self.proc.terminate()
+                try:
+                    self.proc.wait(timeout=0.5)
+                except Exception:
+                    try:
+                        os.killpg(self.proc.pid, signal.SIGKILL)
+                    except Exception:
+                        self.proc.kill()
+        except Exception:
+            pass
+        finally:
+            if self.master_fd is not None:
+                try:
+                    os.close(self.master_fd)
+                except OSError:
+                    pass
+                self.master_fd = None
+
+    def kill(self):
+        self.terminate()
+
+
 class TerminalSession:
-    def __init__(self, session_id: str, command: str = "powershell.exe", cwd: str = None, preset: str = "shell", is_orchestrator: bool = False, title: str = ""):
+    def __init__(
+        self,
+        session_id: str,
+        command: str = None,
+        cwd: str = None,
+        preset: str = "shell",
+        is_orchestrator: bool = False,
+        title: str = "",
+        maestro: bool = None,
+        monitor_activity: bool = False,
+        appearance_icon: str = "",
+        appearance_color: str = "",
+        theme: str = "",
+        role: str = ""
+    ):
         self.session_id = session_id
         self.title = title or session_id
-        self.command = command or "powershell.exe"
+        self.command = command or DEFAULT_SHELL
         self.cwd = os.path.abspath(cwd) if cwd and os.path.exists(cwd) else os.getcwd()
         self.preset = preset.lower()
-        self.is_orchestrator = is_orchestrator
+        self.is_orchestrator = bool(is_orchestrator or (maestro is True))
+        self.maestro = bool(maestro if maestro is not None else is_orchestrator)
+        self.monitor_activity = bool(monitor_activity)
+        self.appearance_icon = appearance_icon or ""
+        self.appearance_color = appearance_color or ""
+        self.theme = theme or ""
+        self.role = role or ""
         self.process: Optional[asyncio.subprocess.Process] = None
         self.pty: Optional[Any] = None
+        self.master_fd: Optional[int] = None
+        self.proc: Optional[subprocess.Popen] = None
         self.is_running = False
         self.output_callback: Optional[Callable[[str], Any]] = None
         self.loop: Optional[asyncio.AbstractEventLoop] = None
@@ -113,12 +224,24 @@ class TerminalSession:
         self.loop = asyncio.get_running_loop()
         self.is_running = True
 
-        # Build clean environment with BIN_DIR & Antigravity in PATH
+        # Build clean environment with BIN_DIR & Antigravity/CLI in PATH
         env = os.environ.copy()
-        gemini_bin = os.path.expandvars(r"%USERPROFILE%\.gemini\bin")
-        paths_to_add = [p for p in [gemini_bin, BIN_DIR] if p not in env.get("PATH", "")]
-        if paths_to_add:
-            env["PATH"] = ";".join(paths_to_add) + ";" + env.get("PATH", "")
+        if IS_WINDOWS:
+            gemini_bin = os.path.expandvars(r"%USERPROFILE%\.gemini\bin")
+            paths_to_add = [p for p in [gemini_bin, BIN_DIR] if p and p not in env.get("PATH", "")]
+            if paths_to_add:
+                env["PATH"] = ";".join(paths_to_add) + ";" + env.get("PATH", "")
+        else:
+            gemini_bin = os.path.expanduser("~/.gemini/antigravity-cli/bin")
+            gemini_bin2 = os.path.expanduser("~/.gemini/bin")
+            local_bin = os.path.expanduser("~/.local/bin")
+            existing_paths = env.get("PATH", "").split(":")
+            paths_to_add = [p for p in [gemini_bin, gemini_bin2, local_bin, BIN_DIR] if p and os.path.exists(p) and p not in existing_paths]
+            if paths_to_add:
+                env["PATH"] = ":".join(paths_to_add) + ":" + env.get("PATH", "")
+            env.setdefault("TERM", "xterm-256color")
+            env.setdefault("COLORTERM", "truecolor")
+
         env["PYTHONIOENCODING"] = "utf-8"
         env["PYTHONUTF8"] = "1"
         env["PWD"] = self.cwd
@@ -126,55 +249,150 @@ class TerminalSession:
         env["MAESTRI_NODE_ID"] = self.session_id
         env["MAESTRI_NODE_TITLE"] = self.title or self.session_id
         env["MAESTRI_IS_ORCHESTRATOR"] = "1" if self.is_orchestrator else "0"
-        env["MAESTRI_API_URL"] = "http://127.0.0.1:8000"
+        env["MAESTRI_API_URL"] = os.environ.get("MAESTRI_API_URL", f"http://127.0.0.1:{os.environ.get('PORT', '8000')}")
 
         cmd = (self.command or "").strip()
         preset = (self.preset or "shell").lower()
 
-        preset_ai_map = {
-            "antigravity": "agy",
-            "claude": "claude",
-            "codex": "codex"
-        }
+        if IS_WINDOWS:
+            preset_ai_map = {
+                "antigravity": "agy",
+                "agy": "agy",
+                "gemini": "gemini",
+                "claude": "claude",
+                "codex": "codex",
+                "opencode": "opencode",
+                "deepseek": "deepseek",
+                "shell": "powershell.exe"
+            }
 
-        safe_cwd = self.cwd.replace("'", "''")
-        cd_prefix = f"Set-Location -LiteralPath '{safe_cwd}'; "
+            safe_cwd = self.cwd.replace("'", "''")
+            cd_prefix = f"Set-Location -LiteralPath '{safe_cwd}'; "
 
-        ai_cmd = preset_ai_map.get(preset)
-        if ai_cmd:
-            if not cmd or cmd.lower() in ["powershell.exe", "powershell", "cmd.exe", "cmd", preset, ai_cmd]:
-                cmd_to_run = f'powershell.exe -NoLogo -NoExit -Command "{cd_prefix}{ai_cmd}"'
-            elif "powershell" in cmd.lower() and "-command" not in cmd.lower():
-                cmd_to_run = f'{cmd} -NoLogo -NoExit -Command "{cd_prefix}{ai_cmd}"'
+            ai_cmd = preset_ai_map.get(preset)
+            if ai_cmd:
+                if not cmd or cmd.lower() in ["powershell.exe", "powershell", "cmd.exe", "cmd", preset, ai_cmd]:
+                    cmd_to_run = f'powershell.exe -NoLogo -NoExit -Command "{cd_prefix}{ai_cmd}"'
+                elif "powershell" in cmd.lower() and "-command" not in cmd.lower():
+                    cmd_to_run = f'{cmd} -NoLogo -NoExit -Command "{cd_prefix}{ai_cmd}"'
+                else:
+                    if "powershell" in cmd.lower() and "-nologo" not in cmd.lower():
+                        cmd_to_run = f"{cmd} -NoLogo -NoExit"
+                    else:
+                        cmd_to_run = f'powershell.exe -NoLogo -NoExit -Command "{cd_prefix}{cmd}"'
             else:
-                if "powershell" in cmd.lower() and "-nologo" not in cmd.lower():
+                if not cmd or cmd.lower() in ["powershell.exe", "powershell"]:
+                    cmd_to_run = f'powershell.exe -NoLogo -NoExit -Command "{cd_prefix}"'
+                elif "powershell" in cmd.lower() and "-nologo" not in cmd.lower():
                     cmd_to_run = f"{cmd} -NoLogo -NoExit"
                 else:
-                    cmd_to_run = f'powershell.exe -NoLogo -NoExit -Command "{cd_prefix}{cmd}"'
-        else:
-            if not cmd or cmd.lower() in ["powershell.exe", "powershell"]:
-                cmd_to_run = f'powershell.exe -NoLogo -NoExit -Command "{cd_prefix}"'
-            elif "powershell" in cmd.lower() and "-nologo" not in cmd.lower():
-                cmd_to_run = f"{cmd} -NoLogo -NoExit"
-            else:
-                cmd_to_run = cmd
+                    cmd_to_run = cmd
 
-        # 1. Primary Engine: Native Windows ConPTY (Identical to VS Code / Windows Terminal)
-        if HAS_WINPTY:
+            # 1. Primary Engine for Windows: Native ConPTY via winpty
+            if HAS_WINPTY:
+                try:
+                    self.pty = PtyProcess.spawn(
+                        cmd_to_run,
+                        cwd=self.cwd,
+                        env=env,
+                        dimensions=(self.rows, self.cols)
+                    )
+
+                    def _win_reader():
+                        while self.is_running and self.pty and self.pty.isalive():
+                            try:
+                                data = self.pty.read(4096)
+                                if not data:
+                                    break
+                                self.last_output = (self.last_output + data)[-4000:]
+                                self.scrollback_buffer = (self.scrollback_buffer + data)[-80000:]
+                                self._append_to_log(data)
+                                if self.output_callback and self.loop and self.loop.is_running():
+                                    asyncio.run_coroutine_threadsafe(self.send_output(data), self.loop)
+                            except (EOFError, OSError):
+                                break
+                            except Exception:
+                                break
+                        self.is_running = False
+
+                    self._thread = threading.Thread(target=_win_reader, daemon=True)
+                    self._thread.start()
+                    if self.is_orchestrator:
+                        asyncio.create_task(self._delayed_welcome_banner())
+                    return
+                except Exception as e:
+                    print(f"[TerminalSession] Falha ao iniciar com ConPTY, usando fallback: {e}")
+
+        else:
+            # Linux / macOS / POSIX
+            default_shell = os.environ.get("SHELL", "/bin/bash")
+            preset_ai_map = {
+                "antigravity": "agy",
+                "agy": "agy",
+                "gemini": "gemini",
+                "claude": "claude",
+                "codex": "codex",
+                "opencode": "opencode",
+                "deepseek": "deepseek",
+                "shell": default_shell
+            }
+
+            ai_cmd = preset_ai_map.get(preset)
+            if ai_cmd and preset != "shell":
+                if not cmd or cmd.lower() in ["powershell.exe", "powershell", "cmd.exe", "cmd", preset, ai_cmd]:
+                    cmd_to_run = ai_cmd
+                else:
+                    cmd_to_run = cmd
+            else:
+                if not cmd or cmd.lower() in ["powershell.exe", "powershell", "cmd.exe", "cmd", "shell"]:
+                    cmd_to_run = default_shell
+                else:
+                    cmd_to_run = cmd
+
+            # 1. Primary Engine for Linux/macOS: Native POSIX PTY via os.openpty()
             try:
-                self.pty = PtyProcess.spawn(
-                    cmd_to_run,
+                master_fd, slave_fd = os.openpty()
+                self.master_fd = master_fd
+
+                # Apply initial terminal window dimensions
+                try:
+                    fcntl.ioctl(master_fd, termios.TIOCSWINSZ, struct.pack("HHHH", self.rows, self.cols, 0, 0))
+                except Exception:
+                    pass
+
+                # Parse command arguments
+                if isinstance(cmd_to_run, str):
+                    if any(c in cmd_to_run for c in ["|", "&", ";", ">", "<"]):
+                        cmd_args = [default_shell, "-c", cmd_to_run]
+                    else:
+                        try:
+                            cmd_args = shlex.split(cmd_to_run)
+                        except Exception:
+                            cmd_args = [cmd_to_run]
+                else:
+                    cmd_args = list(cmd_to_run)
+
+                proc = subprocess.Popen(
+                    cmd_args,
+                    stdin=slave_fd,
+                    stdout=slave_fd,
+                    stderr=slave_fd,
                     cwd=self.cwd,
                     env=env,
-                    dimensions=(self.rows, self.cols)
+                    start_new_session=True,
+                    close_fds=True
                 )
+                os.close(slave_fd)
+                self.proc = proc
+                self.pty = PosixPtyProcess(proc, master_fd)
 
-                def _reader():
-                    while self.is_running and self.pty and self.pty.isalive():
+                def _posix_reader():
+                    while self.is_running and self.master_fd is not None and self.pty and self.pty.isalive():
                         try:
-                            data = self.pty.read(4096)
-                            if not data:
+                            chunk = os.read(self.master_fd, 4096)
+                            if not chunk:
                                 break
+                            data = chunk.decode("utf-8", errors="replace")
                             self.last_output = (self.last_output + data)[-4000:]
                             self.scrollback_buffer = (self.scrollback_buffer + data)[-80000:]
                             self._append_to_log(data)
@@ -186,18 +404,18 @@ class TerminalSession:
                             break
                     self.is_running = False
 
-                self._thread = threading.Thread(target=_reader, daemon=True)
+                self._thread = threading.Thread(target=_posix_reader, daemon=True)
                 self._thread.start()
                 if self.is_orchestrator:
                     asyncio.create_task(self._delayed_welcome_banner())
                 return
             except Exception as e:
-                print(f"[TerminalSession] Falha ao iniciar com ConPTY, usando fallback: {e}")
+                print(f"[TerminalSession] Falha ao iniciar com PTY POSIX, usando fallback: {e}")
 
-        # 2. Fallback Engine: Subprocess Shell (in case winpty is unavailable)
+        # 2. Fallback Engine: Subprocess Shell (in case PTY engines are unavailable)
         try:
             self.process = await asyncio.create_subprocess_shell(
-                cmd_to_run,
+                cmd_to_run if isinstance(cmd_to_run, str) else " ".join(cmd_to_run),
                 stdin=asyncio.subprocess.PIPE,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.STDOUT,
@@ -206,10 +424,10 @@ class TerminalSession:
             )
             self._read_task = asyncio.create_task(self._listen_subprocess_output())
         except Exception as e:
-            await self.send_output(f"\r\n\x1b[31m[Erro ao iniciar terminal: {e}]\x1b[0m\r\nPS {self.cwd}> ")
+            prompt_symbol = f"PS {self.cwd}> " if IS_WINDOWS else f"{self.cwd}$ "
+            await self.send_output(f"\r\n\x1b[31m[Erro ao iniciar terminal: {e}]\x1b[0m\r\n{prompt_symbol}")
 
     async def _listen_subprocess_output(self):
-        import codecs
         decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
         try:
             while self.is_running and self.process and self.process.stdout:
@@ -219,7 +437,7 @@ class TerminalSession:
                 try:
                     text = decoder.decode(chunk)
                 except Exception:
-                    text = chunk.decode("cp850", errors="replace")
+                    text = chunk.decode("cp850" if IS_WINDOWS else "utf-8", errors="replace")
 
                 self.last_output = (self.last_output + text)[-4000:]
                 self.scrollback_buffer = (self.scrollback_buffer + text)[-80000:]
@@ -232,11 +450,40 @@ class TerminalSession:
         finally:
             self.is_running = False
 
+    def write_input(self, data: str):
+        """Synchronously sends input to the terminal session."""
+        if not data:
+            return
+        self.tokens_used += max(1, len(data) // 4)
+        if not IS_WINDOWS and self.master_fd is not None:
+            try:
+                os.write(self.master_fd, data.encode("utf-8"))
+                return
+            except Exception:
+                pass
+        elif self.pty and hasattr(self.pty, "isalive") and self.pty.isalive():
+            try:
+                self.pty.write(data)
+                return
+            except Exception:
+                pass
+        elif self.process and self.process.stdin and self.is_running:
+            try:
+                self.process.stdin.write(data.encode("utf-8", errors="replace"))
+            except Exception:
+                pass
+
     async def write(self, data: str):
         if not data:
             return
         self.tokens_used += max(1, len(data) // 4)
-        if self.pty and self.pty.isalive():
+        if not IS_WINDOWS and self.master_fd is not None:
+            try:
+                os.write(self.master_fd, data.encode("utf-8"))
+                return
+            except Exception:
+                pass
+        elif self.pty and hasattr(self.pty, "isalive") and self.pty.isalive():
             try:
                 self.pty.write(data)
                 return
@@ -252,7 +499,13 @@ class TerminalSession:
     async def resize(self, cols: int, rows: int):
         self.cols = max(15, cols)
         self.rows = max(4, rows)
-        if self.pty and self.pty.isalive():
+        if not IS_WINDOWS and self.master_fd is not None:
+            try:
+                fcntl.ioctl(self.master_fd, termios.TIOCSWINSZ, struct.pack("HHHH", self.rows, self.cols, 0, 0))
+                return
+            except Exception:
+                pass
+        elif self.pty and hasattr(self.pty, "isalive") and self.pty.isalive():
             try:
                 self.pty.setwinsize(self.rows, self.cols)
             except Exception:
@@ -289,6 +542,12 @@ class TerminalSession:
                 self.pty.terminate()
             except Exception:
                 pass
+        if not IS_WINDOWS and self.master_fd is not None:
+            try:
+                os.close(self.master_fd)
+            except OSError:
+                pass
+            self.master_fd = None
         if self._read_task:
             self._read_task.cancel()
         if self.process:
@@ -296,6 +555,7 @@ class TerminalSession:
                 self.process.terminate()
             except Exception:
                 pass
+
 
 class TerminalManager:
     def __init__(self):
@@ -320,23 +580,66 @@ class TerminalManager:
                 pass
         return ""
 
-    def get_or_create(self, session_id: str, command: str = "powershell.exe", cwd: str = None, preset: str = "shell", is_orchestrator: bool = False, title: str = "") -> TerminalSession:
+    def get_or_create(
+        self,
+        session_id: str,
+        command: str = None,
+        cwd: str = None,
+        preset: str = "shell",
+        is_orchestrator: bool = False,
+        title: str = "",
+        maestro: bool = None,
+        monitor_activity: bool = False,
+        appearance_icon: str = "",
+        appearance_color: str = "",
+        theme: str = "",
+        role: str = ""
+    ) -> TerminalSession:
         preset_clean = (preset or "shell").lower()
+        cmd_effective = command
+        if not cmd_effective or (not IS_WINDOWS and cmd_effective.lower() in ["powershell.exe", "powershell"]):
+            cmd_effective = DEFAULT_SHELL
+
         existing = self.sessions.get(session_id)
         if existing:
             # If the preset, command OR working directory changed,
             # terminate old process so new process boots cleanly in the correct directory!
             cwd_changed = bool(cwd and os.path.exists(cwd) and os.path.abspath(existing.cwd) != os.path.abspath(cwd))
-            if existing.preset != preset_clean or (command and existing.command != command) or cwd_changed:
+            if existing.preset != preset_clean or (cmd_effective and existing.command != cmd_effective) or cwd_changed:
                 print(f"[TerminalManager] Recriando sessão {session_id} devido a mudança de configuração/diretório (cwd={cwd}, preset={preset_clean})")
                 asyncio.create_task(existing.close())
                 del self.sessions[session_id]
                 existing = None
 
         if not existing:
-            self.sessions[session_id] = TerminalSession(session_id, command, cwd, preset_clean, is_orchestrator, title=title)
+            self.sessions[session_id] = TerminalSession(
+                session_id,
+                cmd_effective,
+                cwd,
+                preset_clean,
+                is_orchestrator,
+                title=title,
+                maestro=maestro,
+                monitor_activity=monitor_activity,
+                appearance_icon=appearance_icon,
+                appearance_color=appearance_color,
+                theme=theme,
+                role=role
+            )
         else:
-            self.sessions[session_id].is_orchestrator = is_orchestrator
+            self.sessions[session_id].is_orchestrator = bool(is_orchestrator or (maestro is True))
+            if maestro is not None:
+                self.sessions[session_id].maestro = bool(maestro)
+            if monitor_activity is not None:
+                self.sessions[session_id].monitor_activity = bool(monitor_activity)
+            if appearance_icon:
+                self.sessions[session_id].appearance_icon = appearance_icon
+            if appearance_color:
+                self.sessions[session_id].appearance_color = appearance_color
+            if theme:
+                self.sessions[session_id].theme = theme
+            if role:
+                self.sessions[session_id].role = role
             if title:
                 self.sessions[session_id].title = title
             if cwd and os.path.exists(cwd):
@@ -355,7 +658,10 @@ class TerminalManager:
                 if sess.is_running and sess.pty and sess.pty.isalive():
                     if sess.preset == "shell":
                         safe_path = abs_cwd.replace("'", "''")
-                        await sess.write(f"\r\nSet-Location -LiteralPath '{safe_path}'\r\n")
+                        if IS_WINDOWS:
+                            await sess.write(f"\r\nSet-Location -LiteralPath '{safe_path}'\r\n")
+                        else:
+                            await sess.write(f"\r\ncd '{safe_path}'\r\n")
                     else:
                         # For AI CLI sessions (agy, claude, codex), close so they restart cleanly with new context
                         await sess.close()
@@ -465,7 +771,10 @@ class TerminalManager:
                         target.cwd = abs_wd
                         if (target.preset or "shell").lower() == "shell":
                             safe_wd = abs_wd.replace("'", "''")
-                            await target.write(f"\r\nSet-Location -LiteralPath '{safe_wd}'\r\n")
+                            if IS_WINDOWS:
+                                await target.write(f"\r\nSet-Location -LiteralPath '{safe_wd}'\r\n")
+                            else:
+                                await target.write(f"\r\ncd '{safe_wd}'\r\n")
 
                 d = del_map.get(tid, {})
                 role = d.get("role", "Agente Subordinado")
@@ -474,18 +783,24 @@ class TerminalManager:
 
                 # Format command for specific agent preset
                 preset = (target.preset or "shell").lower()
-                safe_cmd = cmd_to_run.replace('"', '`"')
+                escape_char = '`"' if IS_WINDOWS else r'\"'
+                safe_cmd = cmd_to_run.replace('"', escape_char)
+
                 # If preset already boots directly into the AI CLI interactive session,
                 # send the clean directive as prompt rather than nesting another CLI call!
-                if preset in ["antigravity", "agy", "claude", "codex"]:
+                if preset in ["antigravity", "agy", "gemini", "claude", "codex", "opencode"]:
                     input_text = directive
                 else:
                     if not cmd_to_run.startswith("agy ") and preset in ["antigravity", "agy"]:
                         input_text = f'agy "{safe_cmd}"'
+                    elif not cmd_to_run.startswith("gemini ") and preset == "gemini":
+                        input_text = f'gemini "{safe_cmd}"'
                     elif not cmd_to_run.startswith("codex ") and preset == "codex":
                         input_text = f'codex "{safe_cmd}"'
                     elif not cmd_to_run.startswith("claude ") and preset == "claude":
                         input_text = f'claude "{safe_cmd}"'
+                    elif not cmd_to_run.startswith("opencode ") and preset == "opencode":
+                        input_text = f'opencode "{safe_cmd}"'
                     else:
                         input_text = cmd_to_run
 

@@ -249,7 +249,13 @@ class MaestriApplication {
       this.showToast("Ferramenta Seleção ativa.");
     });
 
-    // 2. Hand / Pan Tool
+    // 2. Chat / Orchestrator Dispatch Tool
+    document.getElementById("btn-tool-chat")?.addEventListener("click", () => {
+      this.setToolActive("chat");
+      this.dispatchFromOrchestrator(this.canvas.selectedNodeId);
+    });
+
+    // 2b. Hand / Pan Tool
     document.getElementById("btn-tool-hand")?.addEventListener("click", () => {
       this.setToolActive("hand");
       this.canvas.activeTool = "hand";
@@ -397,11 +403,25 @@ class MaestriApplication {
         e.preventDefault();
         this.saveStateImmediately();
       }
+      const isInput = ["input", "textarea", "select"].includes(document.activeElement?.tagName?.toLowerCase()) || document.activeElement?.isContentEditable;
+      if (!isInput) {
+        if (e.key === "Delete" || e.key === "Backspace") {
+          if (this.canvas.selectedNodeIds.size > 0) {
+            e.preventDefault();
+            this.deleteSelectedNodes();
+          }
+        } else if (e.key === "Escape") {
+          this.canvas.clearSelection();
+        } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a") {
+          e.preventDefault();
+          this.canvas.selectAllNodes();
+        }
+      }
     });
   }
 
   setToolActive(toolName) {
-    document.querySelectorAll(".toolbar-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".toolbar-btn, .toolbar-tool-btn").forEach(b => b.classList.remove("active"));
     const activeBtn = document.getElementById(`btn-tool-${toolName}`);
     if (activeBtn) activeBtn.classList.add("active");
   }
@@ -561,83 +581,16 @@ class MaestriApplication {
       if (node.borderColor) el.style.borderColor = node.borderColor;
 
       const termBodyId = `term_body_${node.id}`;
-      const orchCrownSvg = `<svg width="11" height="11" viewBox="0 0 24 24" fill="#000" stroke="#000" stroke-width="2" style="margin-right: 3px;"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"></path></svg>`;
-      const orchBadge = node.is_orchestrator ? `<span class="orchestrator-badge">${orchCrownSvg}CHEFE</span>` : '';
-      const modeBadge = isObserver
-        ? `<span id="term_mode_badge_${node.id}" class="mode-badge observer-badge" title="Nó em Modo Observador: Apenas visão e telemetria para a IA. Não recebe ordens nem comandos. Clique para alternar para Controlado." onclick="window.MaestriApp.toggleControllable('${node.id}', event)">👁️ OBSERVAÇÃO</span>`
-        : (node.is_orchestrator ? '' : `<span id="term_mode_badge_${node.id}" class="mode-badge controlled-badge" title="Nó Controlado: Executa ordens do Chefe. Clique para alternar para Apenas Observador." onclick="window.MaestriApp.toggleControllable('${node.id}', event)">⚡ CONTROLADO</span>`);
-      const folderIcon = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 3px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`;
-      const rawCwd = node.cwd ? (node.cwd.split(/[\\/]/).filter(Boolean).pop() || node.cwd) : '';
-      const cleanCwd = rawCwd.replace(/^[📁📂\s]+/, '').trim();
-      const cwdDisplay = node.cwd ? `<span class="term-cwd-pill" title="${node.cwd}">${folderIcon}${cleanCwd}</span>` : '';
 
-      // Requirement: Render Responsibilities / Papéis
-      const respPills = (node.responsibilities || []).map(r => `<span class="term-resp-pill" title="Responsabilidade / Papel do Agente">⚡ ${r}</span>`).join('');
-      const respBar = `<div id="term_resp_bar_${node.id}" class="term-resp-bar">${respPills}</div>`;
-
+      // Modern header will be injected by termController.mountTerminal -> createModernTerminalStructure
+      // We just need a placeholder container for the terminal body
       el.innerHTML = `
-        <div class="terminal-header">
-          <div class="term-title-box">
-            <span class="term-indicator ${node.status === 'running' ? '' : 'idle'}"></span>
-            <span id="term_icon_${node.id}" class="term-custom-icon" title="Ícone do terminal">${node.icon || '💻'}</span>
-            <span id="term_title_text_${node.id}" class="term-title" title="Clique duas vezes para renomear">${node.title}</span>
-            <button class="icon-btn edit-title-btn" title="Renomear terminal" onclick="window.MaestriApp.startRenameNode('${node.id}', event)">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path></svg>
-            </button>
-            ${orchBadge}
-            ${modeBadge}
-            ${cwdDisplay}
-          </div>
-          <div class="term-actions">
-            <button class="icon-btn mode-toggle-btn ${isObserver ? 'is-observer' : 'is-controlled'}" id="term_mode_btn_${node.id}" title="${isObserver ? 'Modo Observador Ativo (Ajuda a IA a enxergar a situação, mas NÃO recebe ordens). Clique para Tornar Controlado' : 'Modo Controlado Ativo (Recebe ordens do Chefe e executa). Clique para Tornar Apenas Observador'}" onclick="window.MaestriApp.toggleControllable('${node.id}', event)">
-              ${isObserver ? '👁️' : '🎮'}
-            </button>
-            <button class="icon-btn" title="Configurações do Terminal (Ícone, Tema, Papel...)" onclick="window.MaestriApp.openEditTerminalModal('${node.id}', event)">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-            </button>
-            <button class="icon-btn ${node.is_orchestrator ? 'active' : ''}" title="${node.is_orchestrator ? 'Remover função de Chefe' : 'Tornar Chefe / Orquestrador'}" onclick="window.MaestriApp.toggleOrchestrator('${node.id}')">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="${node.is_orchestrator ? '#eab308' : 'none'}" stroke="${node.is_orchestrator ? '#eab308' : 'currentColor'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"></path></svg>
-            </button>
-            <button class="icon-btn" title="Compartilhar Saída com Nós Conectados" onclick="window.MaestriApp.broadcastFromNode('${node.id}')">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"></path><path d="M22 2 11 13"></path></svg>
-            </button>
-            <button class="icon-btn" title="Reiniciar" onclick="window.MaestriApp.restartTerminal('${node.id}')">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path><polyline points="21 3 21 8 16 8"></polyline></svg>
-            </button>
-            <button class="icon-btn danger-hover" title="Fechar" onclick="window.MaestriApp.deleteNode('${node.id}')">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            </button>
-          </div>
-        </div>
-        ${respBar}
-        <div id="${termBodyId}" class="term-body"></div>
-        <div class="term-context-bar">
-          <span id="term_conn_status_${node.id}" class="conn-status-text">● Desconectado</span>
-          <div class="conn-actions">
-            <button class="context-pill-btn" onclick="window.MaestriApp.createConnectedContextNote('${node.id}')" title="Criar ou focar anotação de contexto vivo vinculada a este nó">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-              <span>🧠 Contexto</span>
-            </button>
-            <button class="context-pill-btn orch-dispatch-btn ${node.is_orchestrator ? '' : 'hidden'}" onclick="window.MaestriApp.dispatchFromOrchestrator('${node.id}')" title="Formular e despachar ordens com IA para os nós subordinados">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="#eab308" stroke="#eab308" stroke-width="2"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"></path></svg>
-              <span>👑 Despachar Ordens</span>
-            </button>
-            <button class="context-pill-btn" onclick="window.MaestriApp.broadcastFromNode('${node.id}')" title="Compartilhar histórico deste nó com os conectados">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line><path d="M20 21H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h3"></path></svg>
-              <span>Enviar Dados</span>
-            </button>
-          </div>
-        </div>
+        <div id="${termBodyId}" class="terminal-body-modern"></div>
       `;
       world.appendChild(el);
       this.canvas.registerNodeElement(el, node);
 
-      const titleSpan = el.querySelector(`#term_title_text_${node.id}`);
-      titleSpan?.addEventListener("dblclick", (e) => {
-        e.stopPropagation();
-        this.startRenameNode(node.id, e);
-      });
-
+      // Mount terminal with modern header injection
       setTimeout(() => {
         this.termController.mountTerminal(termBodyId, node);
       }, 50);
@@ -1565,9 +1518,13 @@ class MaestriApplication {
   updateAllConnectionStatus() {
     if (!this.canvas || !this.canvas.nodes) return;
     this.canvas.nodes.forEach(node => {
+      if (node.type !== "terminal") return;
+
       const outgoing = this.canvas.edges.filter(e => e.from === node.id).length;
       const incoming = this.canvas.edges.filter(e => e.to === node.id).length;
       const total = outgoing + incoming;
+
+      // Update legacy status text (for backward compat)
       const el = document.getElementById(`term_conn_status_${node.id}`);
       if (el) {
         if (total === 0) {
@@ -1576,6 +1533,20 @@ class MaestriApplication {
           el.innerHTML = `<span style="color: #10b981;">● ${total} conexão(ões) (${outgoing} saída, ${incoming} entrada)</span>`;
         }
       }
+
+      // Update modern status indicator tooltip
+      const termItem = this.termController?.terminals[node.id];
+      if (termItem && termItem.statusEl) {
+        const tooltip = termItem.statusEl.parentElement?.querySelector(".status-tooltip");
+        if (tooltip) {
+          if (total === 0) {
+            tooltip.textContent = "Desconectado";
+          } else {
+            tooltip.textContent = `${total} conexão(ões) ativas (${outgoing} saída, ${incoming} entrada)`;
+          }
+        }
+      }
+
       const dispatchBtn = document.querySelector(`#${node.id} .orch-dispatch-btn`);
       if (dispatchBtn) {
         dispatchBtn.classList.toggle("hidden", !node.is_orchestrator);
@@ -1636,6 +1607,55 @@ class MaestriApplication {
     this.updateAllConnectionStatus();
 
     this.showToast("Nó excluído.");
+    this.triggerAutoSave();
+  }
+
+  deleteSelectedNodes() {
+    const ids = Array.from(this.canvas.selectedNodeIds);
+    if (ids.length === 0) return;
+    if (ids.length === 1) {
+      this.deleteNode(ids[0]);
+      return;
+    }
+    if (confirm(`Deseja excluir os ${ids.length} nós selecionados?`)) {
+      ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.remove();
+        this.termController.destroy(id);
+      });
+      this.canvas.nodes = this.canvas.nodes.filter(n => !ids.includes(n.id));
+      this.canvas.edges = this.canvas.edges.filter(e => !ids.includes(e.from) && !ids.includes(e.to));
+      this.canvas.renderEdges();
+      this.canvas.clearSelection();
+      this.sidebar.updateNodeList(this.canvas.nodes);
+      this.updateAllConnectionStatus();
+      this.showToast(`${ids.length} nós excluídos.`);
+      this.triggerAutoSave();
+    }
+  }
+
+  connectSelectedChain() {
+    const ids = Array.from(this.canvas.selectedNodeIds);
+    if (ids.length < 2) return;
+    let added = 0;
+    for (let i = 0; i < ids.length - 1; i++) {
+      const from = ids[i];
+      const to = ids[i + 1];
+      const exists = this.canvas.edges.some(e => (e.from === from && e.to === to) || (e.from === to && e.to === from));
+      if (!exists) {
+        this.canvas.edges.push({
+          id: `edge_${Date.now()}_${i}`,
+          from,
+          to,
+          style: "dashed",
+          color: "#02b5e2"
+        });
+        added++;
+      }
+    }
+    this.canvas.renderEdges();
+    this.updateAllConnectionStatus();
+    this.showToast(`${added} nova(s) conexão(ões) criada(s).`);
     this.triggerAutoSave();
   }
 

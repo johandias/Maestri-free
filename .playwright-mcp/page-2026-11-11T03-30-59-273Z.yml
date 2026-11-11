@@ -1,0 +1,312 @@
+- generic [ref=e1]:
+  - generic [ref=e226]:
+    - generic [ref=e227]:
+      - generic [ref=e228]:
+        - generic "Fechar Terminal" [ref=e229] [cursor=pointer]
+        - generic "Minimizar/Recolher (Apenas Cabeçalho)" [ref=e230] [cursor=pointer]
+        - generic "Ajustar à Tela / Focar (Fit to View)" [ref=e231] [cursor=pointer]
+      - generic [ref=e232]:
+        - generic [aria-hidden] [ref=e233]: ✨
+        - generic [ref=e234]: Antigravity
+      - textbox [active] [ref=e354]: Antigravity
+      - generic [ref=e240]:
+        - button "Limpar Buffer (Ctrl+L)" [ref=e241] [cursor=pointer]
+        - button "Reiniciar Sessão" [ref=e242] [cursor=pointer]
+        - button "Conectar / Reconectar" [ref=e243] [cursor=pointer]
+    - generic [ref=e248]:
+      - textbox "Terminal input" [ref=e249]
+      - generic [aria-hidden] [ref=e250]:
+        - generic [ref=e251]:
+          - generic [ref=e253]: ▀
+          - generic [ref=e254]: ▀
+          - generic [ref=e255]: ▀
+          - generic [ref=e256]: ▀
+          - generic [ref=e257]: ▀
+          - generic [ref=e258]: ▀
+          - generic [ref=e260]: tamyressantos0702@gmail.com (Google AI Pro)
+        - generic [ref=e261]:
+          - generic [ref=e263]: ▀
+          - generic [ref=e264]: ▀
+          - generic [ref=e265]: ▀
+          - generic [ref=e266]: ▀
+          - generic [ref=e267]: ▀
+          - generic [ref=e268]: ▀
+          - generic [ref=e269]: ▀
+          - generic [ref=e270]: ▀
+          - generic [ref=e272]: Gemini 3.8 Flash (High)
+        - generic [ref=e273]:
+          - generic [ref=e275]: ▄
+          - generic [ref=e276]: ▀
+          - generic [ref=e277]: ▀
+          - generic [ref=e279]: ▀
+          - generic [ref=e280]: ▀
+          - generic [ref=e281]: ▄
+          - generic [ref=e283]: ~/GoogleDrive/Dev/Maestri-free
+        - generic [ref=e284]:
+          - generic [ref=e286]: ▄
+          - generic [ref=e287]: ▀
+          - generic [ref=e288]: ▀
+          - generic [ref=e290]: ▀
+          - generic [ref=e291]: ▀
+          - generic [ref=e292]: ▄
+        - generic [ref=e295]:
+          - generic [ref=e297]: ┃
+          - generic [ref=e299]: Changes to third-party model access
+        - generic [ref=e300]:
+          - generic [ref=e302]: ┃
+          - generic [ref=e303]: Opus 5.5 and Sonnet 5.5 are available on paid Pro and Ultra
+        - generic [ref=e304]:
+          - generic [ref=e306]: ┃
+          - generic [ref=e307]: plans. Third-party model access will no longer be available
+        - generic [ref=e308]:
+          - generic [ref=e310]: ┃
+          - generic [ref=e311]: on your current plan starting on November 18, 2026.
+        - generic [ref=e312]:
+          - generic [ref=e314]: ┃
+          - generic [ref=e316]: esc to dismiss
+        - generic [ref=e317]: ────────────────────────────────────────────────────────────────
+        - generic [ref=e319]:
+          - generic [ref=e355]: ">"
+          - generic [ref=e357]: A
+          - generic [ref=e358]: "uto mode: edits & safe commands auto-approved (shift+tab ..."
+        - generic [ref=e324]: ────────────────────────────────────────────────────────────────
+        - generic [ref=e326]:
+          - generic [ref=e327]: "? for shortcuts"
+          - generic [ref=e329]: auto
+          - generic [ref=e330]: · Gemini 3.8 Flash · high
+  - complementary [ref=e32]:
+    - generic [ref=e33]:
+      - generic [ref=e34]:
+        - generic "Limpar Canvas" [ref=e35] [cursor=pointer]
+        - generic "Recolher" [ref=e36] [cursor=pointer]
+        - generic "Ajustar à Tela" [ref=e37] [cursor=pointer]
+      - generic [ref=e38]:
+        - img "Maestri" [ref=e39]
+        - generic [ref=e40]: MAESTRI
+      - button "Novo Terminal" [ref=e42] [cursor=pointer]
+    - generic [ref=e44]:
+      - button "📁 Meu Projeto ▼" [ref=e45] [cursor=pointer]:
+        - generic [ref=e46]:
+          - generic [ref=e47]: 📁
+          - generic [ref=e48]: Meu Projeto
+        - generic [ref=e49]: ▼
+      - button "Criar Novo Projeto com Foco & Instâncias" [ref=e50] [cursor=pointer]
+    - textbox "Filtrar nós do canvas..." [ref=e54]
+    - generic [ref=e331]:
+      - generic [ref=e332] [cursor=pointer]: Nós no Canvas (2)
+      - generic [ref=e336] [cursor=pointer]:
+        - generic [ref=e337]: Claude Code Agent
+        - generic [ref=e341]: ⚡ Executor
+      - generic [ref=e342] [cursor=pointer]:
+        - generic [ref=e343]:
+          - generic [ref=e344]: ✨
+          - generic [ref=e345]: Antigravity
+        - generic [ref=e346]: ⚡ Executor
+    - generic [ref=e67]:
+      - button "+ Terminal" [ref=e68] [cursor=pointer]
+      - button "+ Bloco" [ref=e70] [cursor=pointer]
+  - banner [ref=e72]:
+    - button "Seleção" [ref=e73] [cursor=pointer]
+    - button "Arrastar" [ref=e77] [cursor=pointer]
+    - button "Terminal" [ref=e82] [cursor=pointer]
+    - button "Conectar" [ref=e86] [cursor=pointer]
+    - button "👑 Orquestrar" [ref=e92] [cursor=pointer]
+    - button "Projetos" [ref=e95] [cursor=pointer]
+    - generic "Clique para selecionar a pasta de trabalho acessível pelas IAs e terminais" [ref=e100]:
+      - button "Selecionar Pasta" [ref=e101] [cursor=pointer]
+      - button "Abrir pasta no Windows Explorer" [ref=e105] [cursor=pointer]
+    - 'generic "Persistência Durável Ativa: todo o contexto, nós e saídas de terminal são salvos no disco sem perda ao fechar (Clique para sincronizar agora)" [ref=e111] [cursor=pointer]': Contexto Salvo
+    - button "Mais" [ref=e116] [cursor=pointer]
+  - generic [ref=e122]:
+    - generic "Clique para ver o consumo e cota de tokens por IA" [ref=e123] [cursor=pointer]:
+      - generic [ref=e124]: "Tokens:"
+      - generic [ref=e128]:
+        - 'generic "Antigravity (Gemini) (Gemini 3.8 Flash): 999.043 de 1.000.000 tokens restantes (99.9%)" [ref=e359]':
+          - generic [ref=e360]: ✨
+          - generic [ref=e361]: 999k
+        - 'generic "Claude Code (Claude 3.5 Sonnet / Opus): 199.811 de 200.000 tokens restantes (99.9%)" [ref=e362]':
+          - generic [ref=e363]: 🟣
+          - generic [ref=e364]: 199k
+    - generic [ref=e132]:
+      - button "Enquadrar todos os nós na tela" [ref=e133] [cursor=pointer]
+      - button "−" [ref=e136] [cursor=pointer]
+      - generic "Clique para 100%" [ref=e137]: 146%
+      - button "+" [ref=e138] [cursor=pointer]
+  - generic:
+    - generic:
+      - generic: New Terminal
+      - generic: Quick Start Presets
+      - generic:
+        - generic: Antigravity
+        - generic: Claude Code
+        - generic: Codex
+        - generic: Shell
+      - generic:
+        - button "Details"
+        - button "Appearance"
+      - generic:
+        - generic:
+          - generic: Nome do Terminal / Agente
+          - textbox: Antigravity
+        - generic:
+          - generic: Ícone Personalizado da Janela
+          - generic:
+            - textbox: ✨
+            - generic: "Escolha um ícone rápido abaixo ou digite qualquer emoji:"
+          - generic:
+            - button "💻"
+            - button "👑"
+            - button "✨"
+            - button "🧠"
+            - button "⚡"
+            - button "🤖"
+            - button "🎨"
+            - button "📦"
+            - button "🧪"
+            - button "🛡️"
+            - button "🚀"
+            - button "🌐"
+            - button "📁"
+            - button "🔥"
+            - button "⚙️"
+        - generic:
+          - generic: Comando Executável na sua Máquina
+          - textbox: agy
+        - generic:
+          - generic: Pasta de Trabalho (Execução na sua Máquina)
+          - generic:
+            - textbox "Pasta do projeto na sua máquina"
+            - button "📂 Procurar..."
+        - generic:
+          - generic: Responsabilidades & Especialidades do Agente
+          - generic:
+            - 'textbox "Ex: Backend REST API, Testes unitários, UI... (Enter)"'
+            - button "+ Adicionar"
+          - generic:
+            - generic: + Backend
+            - generic: + Frontend
+            - generic: + Testes/QA
+            - generic: + Segurança
+            - generic: + Git
+          - generic:
+            - generic:
+              - generic: IA Assistente
+              - button "✕"
+            - generic:
+              - generic: Análise de Código
+              - button "✕"
+        - generic:
+          - checkbox "👑 Definir como Chefe / Orquestrador deste Projeto"
+          - generic: 👑 Definir como Chefe / Orquestrador deste Projeto
+        - generic:
+          - checkbox "⚡ Sistema Orquestrado / Controlado (Recebe ordens e executa)" [checked]
+          - generic: ⚡ Sistema Orquestrado / Controlado (Recebe ordens e executa)
+        - generic: Desmarque para tornar este nó Apenas Observador / Sensor (envia status e visão para ajudar a IA a entender a situação, sem receber ordens nem executar comandos).
+        - generic:
+          - checkbox "Monitorar Atividade e Registrar Trilha de Auditoria" [checked]
+          - generic: Monitorar Atividade e Registrar Trilha de Auditoria
+      - generic:
+        - button "Cancelar"
+        - button "Criar Instância"
+  - generic:
+    - generic:
+      - generic:
+        - generic: 👑
+        - generic: "Orquestrador Chefe: Formular & Despachar Ordens"
+      - generic: O Chefe só pensa, contextualiza e formula ordens com a IA conectada. Ele não executa diretamente, delegando tudo aos nós subordinados.
+      - generic:
+        - generic: "Objetivo Estratégico ou Missão para os Agentes:"
+        - 'textbox "Ex: Crie a rota de autenticação no backend, estruture o login no frontend e valide os testes..."'
+      - generic:
+        - generic:
+          - generic: "Subordinados Destinatários (Seguem Ordens):"
+          - generic:
+            - button "Selecionar Todos"
+            - generic: "|"
+            - button "Nenhum"
+      - generic:
+        - generic: "Atalho: Ctrl + Enter"
+        - button "Cancelar"
+        - button "⚡ Formular e Despachar Ordens com IA"
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic: 📁
+            - generic:
+              - heading "Navegador de Projetos" [level=2]
+              - paragraph:
+                - text: Workspaces, Squads de IA e Ambientes em
+                - code: ./projects/
+          - button "×"
+        - generic:
+          - generic:
+            - textbox "Buscar por nome, pasta ou foco..."
+          - button "Novo Projeto"
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic: 🚀
+          - generic:
+            - heading "Novo Projeto com Foco & Squad de IA" [level=2]
+            - paragraph: Defina o nome, pasta de trabalho e instâncias coordenadas do seu projeto
+        - button "×"
+      - generic:
+        - generic: 1. Identificação & Pasta de Trabalho (CWD)
+        - generic:
+          - generic:
+            - generic: Nome do Projeto *
+            - 'textbox "Ex: E-Commerce Microservices"'
+          - generic:
+            - generic: Foco ou Objetivo da IA (Opcional)
+            - 'textbox "Ex: Refatorar endpoints FastAPI e validar front"'
+        - generic:
+          - generic: Pasta Raiz do Projeto (Onde as IAs vão editar e rodar comandos) *
+          - generic:
+            - textbox "C:\\Caminho\\Do\\Projeto"
+            - button "📁 Procurar..."
+          - generic: A pasta selecionada será gravada no contexto das IAs e nenhuma IA executará varreduras fora dela.
+      - generic:
+        - generic: 2. Escolha o Squad & Foco da IA
+        - generic:
+          - generic:
+            - generic:
+              - generic: 👑
+              - generic: Recomendado
+            - generic: Squad Fullstack
+            - generic: Orquestrador Chefe + Backend API + Frontend Web + Observador PowerShell. Completo e coordenado.
+          - generic:
+            - generic:
+              - generic: 🎨
+              - generic: Design & Telas
+            - generic: Squad Frontend & UI/UX
+            - generic: Chefe Orquestrador + Claude Frontend + Auditor Visual / Responsividade.
+          - generic:
+            - generic:
+              - generic: ⚙️
+              - generic: APIs & Dados
+            - generic: Squad Backend & APIs
+            - generic: Chefe Orquestrador + API Designer + Backend Dev + Persistência de Dados.
+          - generic:
+            - generic:
+              - generic: 🚀
+              - generic: Focado & Rápido
+            - generic: Agente Especialista Único
+            - generic: 1 Terminal Focado de Alta Precisão conectado à sua Nota de Contexto Viva.
+          - generic:
+            - generic:
+              - generic: 🛠️
+              - generic: Customizado
+            - generic: Workspace em Branco
+            - generic: Tela limpa para montar instâncias, nós e blocos personalizados livremente.
+      - generic:
+        - generic:
+          - generic: 3. Instâncias do Squad Selecionado (Personalize ou Adicione)
+          - button "+ Adicionar Instância"
+      - generic:
+        - button "Cancelar"
+        - button "🚀 Criar e Abrir Workspace"
+  - generic: Terminal "Antigravity" criado.
+  - generic [ref=e353]: IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIcccccccccccccccccccccccccccccccc

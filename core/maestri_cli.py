@@ -6,10 +6,31 @@ dynamic competencies management, and inter-node messaging for AI agents and term
 import sys
 import os
 import json
+import time
 import urllib.request
 import urllib.error
 
-API_URL = os.environ.get("MAESTRI_API_URL", "http://127.0.0.1:8000")
+def get_api_url():
+    env_url = os.environ.get("MAESTRI_API_URL")
+    if env_url:
+        return env_url.rstrip("/")
+
+    # Dynamic port probing: check 8001 first, then 8000, then 8080
+    for port in [8001, 8000, 8080]:
+        test_url = f"http://127.0.0.1:{port}"
+        try:
+            req = urllib.request.Request(f"{test_url}/api/workspace")
+            with urllib.request.urlopen(req, timeout=0.6) as resp:
+                if resp.status == 200:
+                    data = json.loads(resp.read().decode("utf-8"))
+                    if "canvas" in data or "meta" in data:
+                        return test_url
+        except Exception:
+            continue
+
+    return "http://127.0.0.1:8001"
+
+API_URL = get_api_url()
 
 def get_workspace():
     try:
@@ -233,6 +254,120 @@ def send_text_to_node(target: str, message: str):
             print(f"\x1b[32m✔ Mensagem enviada para nó [{target}] com sucesso!\x1b[0m")
     except Exception as e:
         print(f"\x1b[31m[Maestri CLI] Falha ao enviar mensagem para [{target}]: {e}\x1b[0m")
+
+def check_target_output(target: str):
+    ws = get_workspace()
+    if not ws:
+        return
+    nodes = ws.get("canvas", {}).get("nodes", [])
+    node = next((n for n in nodes if target.lower() in (n.get("title") or "").lower() or n.get("id") == target), None)
+    if not node:
+        print(f"\x1b[31m[Maestri CLI] Nó [{target}] não encontrado.\x1b[0m")
+        return
+
+    node_id = node.get("id")
+    try:
+        req = urllib.request.Request(f"{API_URL}/api/terminal/history/{node_id}")
+        with urllib.request.urlopen(req, timeout=5.0) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            history = data.get("history", "")
+            print(f"\n\x1b[38;2;56;189;248m💻 === Saída do Terminal [{node.get('title')}] ({node_id}) ===\x1b[0m")
+            print(history[-3000:] if len(history) > 3000 else history or "(Sem saída recente)")
+            print()
+    except Exception as e:
+        print(f"\x1b[31m[Maestri CLI] Falha ao ler histórico de [{target}]: {e}\x1b[0m")
+
+def ask_target(target: str, prompt: str, timeout: float = 45.0):
+    ws = get_workspace()
+    if not ws:
+        return
+    nodes = ws.get("canvas", {}).get("nodes", [])
+    node = next((n for n in nodes if target.lower() in (n.get("title") or "").lower() or n.get("id") == target), None)
+    if not node:
+        print(f"\x1b[31m[Maestri CLI] Nó [{target}] não encontrado.\x1b[0m")
+        return
+
+    node_id = node.get("id")
+    initial_len = 0
+    try:
+        req = urllib.request.Request(f"{API_URL}/api/terminal/history/{node_id}")
+        with urllib.request.urlopen(req, timeout=3.0) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            initial_len = len(data.get("history", ""))
+    except Exception:
+        pass
+
+    print(f"\x1b[38;2;2;181;226m▶ [Maestri CLI] Enviando solicitação para [{node.get('title')}]...\x1b[0m")
+    payload = {"target_name": target, "text": prompt}
+    try:
+        data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(f"{API_URL}/api/terminal/send-text", data=data, headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=5.0) as resp:
+            pass
+    except Exception as e:
+        print(f"\x1b[31m[Maestri CLI] Falha ao enviar para [{target}]: {e}\x1b[0m")
+        return
+
+    start_time = time.time()
+    last_len = initial_len
+    stable_cycles = 0
+    collected_output = ""
+
+    while time.time() - start_time < timeout:
+        time.sleep(1.0)
+        try:
+            req = urllib.request.Request(f"{API_URL}/api/terminal/history/{node_id}")
+            with urllib.request.urlopen(req, timeout=3.0) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                hist = data.get("history", "")
+                curr_len = len(hist)
+                if curr_len > last_len:
+                    last_len = curr_len
+                    stable_cycles = 0
+                    collected_output = hist[initial_len:]
+                elif curr_len > initial_len:
+                    stable_cycles += 1
+                    if stable_cycles >= 2:
+                        break
+        except Exception:
+            pass
+
+    print(f"\n\x1b[38;2;16;185;129m✔ === Resposta de [{node.get('title')}] ===\x1b[0m")
+    print(collected_output.strip() or "(Comando executado, sem saída adicional)")
+    print()
+
+def recruit_agent(name: str, preset: str = "shell", role: str = "Geral"):
+    payload = {
+        "type": "terminal",
+        "title": name,
+        "preset": preset,
+        "responsibilities": [role] if role else ["Geral"]
+    }
+    try:
+        data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(f"{API_URL}/api/nodes/create", data=data, headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=5.0) as resp:
+            res = json.loads(resp.read().decode("utf-8"))
+            print(f"\x1b[32m✔ Agente [{name}] recrutado com sucesso! (ID: {res.get('node', {}).get('id')})\x1b[0m")
+    except Exception as e:
+        print(f"\x1b[31m[Maestri CLI] Falha ao recrutar agente: {e}\x1b[0m")
+
+def dismiss_agent(target: str):
+    ws = get_workspace()
+    if not ws:
+        return
+    nodes = ws.get("canvas", {}).get("nodes", [])
+    node = next((n for n in nodes if target.lower() in (n.get("title") or "").lower() or n.get("id") == target), None)
+    if not node:
+        print(f"\x1b[31m[Maestri CLI] Nó [{target}] não encontrado.\x1b[0m")
+        return
+    node_id = node.get("id")
+    try:
+        req = urllib.request.Request(f"{API_URL}/api/nodes/{node_id}", method="DELETE")
+        with urllib.request.urlopen(req, timeout=5.0) as resp:
+            print(f"\x1b[32m✔ Agente [{node.get('title')}] dispensado do canvas.\x1b[0m")
+    except Exception as e:
+        print(f"\x1b[31m[Maestri CLI] Falha ao dispensar nó: {e}\x1b[0m")
 
 def list_nodes():
     ws = get_workspace()
@@ -707,6 +842,48 @@ def main():
             else:
                 comp = " ".join(sys.argv[2:])
                 update_role("add", comp)
+
+    elif cmd in ["ask", "perguntar", "solicitar"]:
+        if len(sys.argv) < 4:
+            print("Informe o alvo e a solicitação. Exemplo: maestri ask Claude 'Revise o PR'")
+            sys.exit(1)
+        target = sys.argv[2]
+        prompt = " ".join(sys.argv[3:])
+        ask_target(target, prompt)
+
+    elif cmd in ["check", "checar", "verificar", "output"]:
+        if len(sys.argv) < 3:
+            print("Informe o alvo. Exemplo: maestri check Claude")
+            sys.exit(1)
+        target = sys.argv[2]
+        check_target_output(target)
+
+    elif cmd in ["recruit", "recrutar", "spawn"]:
+        if len(sys.argv) < 3:
+            print("Informe o nome do agente. Exemplo: maestri recruit 'Tester' --preset shell --role 'Testes'")
+            sys.exit(1)
+        name = sys.argv[2]
+        preset = "shell"
+        role = "Geral"
+        args = sys.argv[3:]
+        i = 0
+        while i < len(args):
+            if args[i] == "--preset" and i + 1 < len(args):
+                preset = args[i+1]
+                i += 2
+            elif args[i] == "--role" and i + 1 < len(args):
+                role = args[i+1]
+                i += 2
+            else:
+                i += 1
+        recruit_agent(name, preset, role)
+
+    elif cmd in ["dismiss", "dispensar", "kill", "remover-agente"]:
+        if len(sys.argv) < 3:
+            print("Informe o alvo. Exemplo: maestri dismiss 'Tester'")
+            sys.exit(1)
+        target = sys.argv[2]
+        dismiss_agent(target)
 
     elif cmd in ["nodes", "nos", "list"]:
         list_nodes()

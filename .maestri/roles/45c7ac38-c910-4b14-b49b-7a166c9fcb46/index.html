@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!--
+      maestri-file: serves note images and file previews, from the workspace
+      files dir or from a path a workspace links;
+      maestri-tree: serves one file tree's own media, for the editor pane's
+      media tabs. Both are main-process protocols with their own path checks,
+      and neither is reachable by fetch from here.
+
+      frame-src AND object-src carry maestri-tree for ONE reason: a PDF opens in
+      an <iframe> and Chromium's built-in viewer is an extension that embeds the
+      document, and which of the two policies that embed is checked against has
+      moved between Chromium versions. Naming both is what stops a PDF tab from
+      coming up blank, with no console error, on whichever version we ship.
+    -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: maestri-file: maestri-tree:; media-src 'self' blob: maestri-file: maestri-tree:; frame-src 'self' maestri-tree:; object-src 'self' maestri-tree:; script-src 'self'; font-src 'self' data:;" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Maestri</title>
+    <script type="module" crossorigin src="./assets/index-CGVZYzIX.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/global-DJ94FsIF.js">
+    <link rel="modulepreload" crossorigin href="./assets/use-reduced-motion-DmovqxRW.js">
+    <link rel="modulepreload" crossorigin href="./assets/computer-use-CKieRuVM.js">
+    <link rel="modulepreload" crossorigin href="./assets/index-DfYfmS2a.js">
+    <link rel="modulepreload" crossorigin href="./assets/PresenceCursor-CyzhmM5w.js">
+    <link rel="modulepreload" crossorigin href="./assets/download-D4mieDYz.js">
+    <link rel="stylesheet" crossorigin href="./assets/global-BTxoDN5S.css">
+    <link rel="stylesheet" crossorigin href="./assets/index-D9SjH60b.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

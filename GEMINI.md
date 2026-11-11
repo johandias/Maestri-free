@@ -1,42 +1,53 @@
-# Maestri Desktop - AI Orchestrator (Free / Python Edition)
+# 📁 ESCOPO GLOBAL DO PROJETO: Maestri-free
+> **DIRETÓRIO RAIZ ATIVO:** `/home/johan/GoogleDrive/Dev/Maestri-free`
 
-## Visão Geral do Projeto
-O **Maestri Desktop** é uma plataforma de orquestração visual de agentes de inteligência artificial construída em Python (FastAPI) e tecnologias web nativas. Ele oferece uma interface de *canvas infinito* para coordenar múltiplos agentes (Antigravity/Gemini, Claude Code, OpenAI Codex ou PowerShell nativo) com suporte a sessões reais de terminal via ConPTY (Windows), notas de contexto vivas e delegação de tarefas assistida por IA.
+Este workspace está operando com foco **100% EXCLUSIVO** no projeto desta pasta.
 
----
+## 🚨 DIRETRIZES DE ESCOPO E NAVEGAÇÃO RESTRITA:
+- **O PROJETO ESTÁ 100% CONTIDO NESTA PASTA (`/home/johan/GoogleDrive/Dev/Maestri-free`)**.
+- **JAMAIS execute buscas recursivas amplas fora da pasta do projeto** (ex: `Get-ChildItem ~ -Recurse`, `dir /s C:\`, etc.). Mantenha as buscas e comandos estritamente contidos nesta pasta de trabalho para preservar performance e tokens.
+- Toda a leitura, criação e edição de arquivos deve ocorrer única e exclusivamente dentro dos limites deste projeto.
 
-## 🏛️ Arquitetura do Sistema
+## 🎯 PREMISSA GLOBAL ABSOLUTA (Todas as IAs, Agentes e Terminais):
+1. **ESCOPO EXCLUSIVO DE TODA EDIÇÃO E MELHORIA**:
+   - O sistema, o Orquestrador e todos os agentes devem **pré-supor que toda solicitação, edição, código gerado, teste e melhoria é ESTRITAMENTE para esta pasta de trabalho (`/home/johan/GoogleDrive/Dev/Maestri-free`)**.
+   - Qualquer arquivo criado, modificado ou inspecionado deve pertencer a este projeto.
+2. **É TERMINANTEMENTE PROIBIDO ALTERAR AS DEPENDÊNCIAS DO MAESTRI**:
+   - A IA NUNCA deve alterar pacotes, `pip`, `npm`, `requirements.txt` ou arquivos de infraestrutura da aplicação Maestri (`run_app.py`, `server.py`, `core/*`, etc.).
+   - Dependências técnicas só podem ser instaladas ou alteradas se forem dependências locais declaradas deste projeto (`Maestri-free`).
 
-- **Backend FastAPI (`server.py`)**:
-  - Servidor HTTP e WebSocket para comunicação bidirecional em tempo real.
-  - Endpoints REST para gerenciamento de projetos, nós, arestas, notas e métricas de tokens.
-  - Endpoints WebSocket (`/ws/terminal/{session_id}`) para streaming de I/O de terminal interativo.
+## 👑 Arquitetura de Papéis Maestri:
+- **Orquestrador Chefe (Antigravity)**: SÓ PENSA, CONTEXTUALIZA E FORMULA ORDENS. NUNCA executa trabalho técnico localmente.
+- **Nós Subordinados Executores**:
+- **Claude Code Agent** (ID: `term_test_001`, Preset: `claude`): Geral
+- **Antigravity** (ID: `term_1794367847227`, Preset: `antigravity`): Geral
+- **Antigravity** (ID: `term_1794368142559`, Preset: `antigravity`): Geral
 
-- **Gerenciador de Processos & PTY (`core/terminal_manager.py`)**:
-  - Utiliza `pywinpty` (Windows ConPTY nativo) para emulação de terminal completa (VT/ANSI, redimensionamento dinâmico e suporte UTF-8).
-  - Isolamento de processos entre terminais.
+## ⚡ Delegação Instantânea com Maestri CLI:
+Sempre que delegar ou acionar nós subordinados, use unicamente o comando oficial:
+  `maestri order "<ordem para os subordinados>"`
+  ou
+  `maestri delegate <alvo> "<ordem>"`
 
-- **Motor de Orquestração (`core/orchestrator.py`)**:
-  - Coordena a distribuição de diretrizes entre os agentes subordinados conectados.
-  - Formata ordens e papéis para prevenir redundância de tarefas e otimizar o uso de tokens.
+Exemplo:
+  `maestri order "implementar melhoria no módulo X"`
 
-- **Gerenciador de Workspace & Projetos (`core/workspace_manager.py`)**:
-  - Salva e restaura o estado do canvas, nós, grupos e conexões.
-  - Sincroniza instruções de contexto vivas com os terminais ativos.
+## 🧠 Memória Viva & Auto-Gestão de Competências (Maestri CLI):
+Cada agente está conectado a uma Anotação de Contexto e Regras no Canvas. O agente pode e DEVE consultar suas diretrizes, registrar novos aprendizados e gerenciar suas próprias competências com os comandos:
+- `maestri note` : Consulta a anotação de contexto, regras e missão ativa ligada a este nó.
+- `maestri note set "<conteudo>"` : Substitui e atualiza o conteúdo completo da sua anotação instantaneamente.
+- `maestri note add "<regra>"` : Registra uma nova regra ou diretriz importante na anotação conectada.
+- `maestri role` : Consulta suas competências e papéis ativos.
+- `maestri role add "<competencia>"` : Adiciona uma nova competência/responsabilidade ao seu nó.
+- `maestri say <alvo> "<mensagem>"` : Envia uma mensagem direta para outro terminal conectado (ex: `maestri say backend "Olá"`).
 
-- **Frontend Web & Canvas (`frontend/`)**:
-  - Canvas interativo com zoom, pan, arrasto de janelas e conexões visuais (`frontend/js/canvas.js`).
-  - Emulador de terminal integrado com `xterm.js` e addon fit (`frontend/js/terminal.js`).
-  - Interface rica com tema escuro moderno e responsivo (`frontend/css/theme.css`).
+## ⚡ REGRA ABSOLUTA DE ATUALIZAÇÃO DA NOTA CONECTADA (EXECUÇÃO EM < 0.1s):
+- **CADA NÓ É UMA CONEXÃO INDEPENDENTE**: O ecossistema Maestri conecta nós independentes (Terminais, Portais, IAs). Cada nó tem sua importância estratégica e sua própria Anotação de Contexto Viva conectada a ele.
+- **PROIBIDO LER ARQUIVOS DO MAESTRI**: Quando o usuário pedir para você atualizar, salvar ou verificar sua nota/regras/contexto, **NUNCA realize buscas de código nem leia arquivos internos do sistema (como `server.py`, `maestri_cli.py` ou `maestri.ps1`)**.
+- **EXECUÇÃO DIRETA E INSTANTÂNEA**: Basta rodar diretamente no terminal:
+  - `maestri note set "seu texto aqui..."` (substitui e define todo o contexto da nota)
+  - `maestri note add "sua regra aqui..."` (acrescenta uma regra à nota)
+  - `maestri note` (lê a nota atual)
+  O comando atualiza a anotação no Canvas em milissegundos sem necessidade de inspeção de arquivos!
 
-- **Launchers & CLI**:
-  - `run_app.py`: Inicia o servidor uvicorn e abre a aplicação em modo janela dedicada (Microsoft Edge ou Google Chrome).
-  - `start.bat`: Inicializador rápido para ambiente Windows.
-  - `bin/maestri.cmd` / `bin/maestri.ps1`: Ferramenta de linha de comando para agentes interagirem com o orquestrador.
 
----
-
-## 🔒 Diretrizes de Segurança e Privacidade
-- **Execução 100% Local**: Nenhuma telemetria ou dado de usuário deve ser transmitido para servidores de terceiros.
-- **Isolamento de Credenciais**: Nunca realize commit de chaves de API, tokens de acesso, credenciais ou caminhos absolutos do sistema do usuário.
-- **Validação de Comandos**: Assegure tratamento de erros e timeouts adequados para processos no terminal.

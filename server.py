@@ -4,7 +4,9 @@ Serves static frontend, handles REST endpoints for workspace persistence,
 projects in ./projects/, native Windows folder picker, inter-node context sharing,
 and WebSocket streams for real machine terminals.
 """
+import sys
 import os
+import time
 import json
 import asyncio
 import re
@@ -199,13 +201,394 @@ async def load_project(slug: str):
 
 @app.post("/api/projects/{slug}/switch")
 async def switch_project_post(slug: str):
+    _seed_workspace_if_needed(slug)
     data = workspace_mgr.load_project(slug)
     if data:
+        cwd = data.get("meta", {}).get("working_directory")
+        if cwd and os.path.exists(cwd):
+            await terminal_mgr.update_all_sessions_cwd(cwd)
         return JSONResponse(
             content={"status": "ok", "workspace": data},
             headers={"Cache-Control": "no-store, no-cache, must-revalidate"}
         )
     return JSONResponse(status_code=404, content={"status": "error", "message": "Project not found"})
+
+# Canonical workspaces matching the official Maestri prints
+CANONICAL_DEFAULT_WORKSPACES = [
+    {
+        "name": "Campanhas Sistema",
+        "slug": "campanhas-sistema",
+        "path": os.path.join(os.path.dirname(os.path.abspath(__file__)), "projects", "campanhas-sistema"),
+        "icon": "📁",
+        "node_count": 5,
+        "agent_count": 3,
+        "nodes": [
+            {
+                "id": "term_cs_orch",
+                "type": "terminal",
+                "title": "Orquestrador de Campanhas",
+                "preset": "antigravity",
+                "command": "powershell.exe" if sys.platform.startswith("win") else os.environ.get("SHELL", "/bin/bash"),
+                "is_orchestrator": True,
+                "maestro": True,
+                "role": "Orquestrador",
+                "appearance_icon": "👑",
+                "appearance_color": "#facc15",
+                "theme": "dark",
+                "monitor_activity": True,
+                "x": 200,
+                "y": 150,
+                "width": 540,
+                "height": 340
+            },
+            {
+                "id": "term_cs_claude",
+                "type": "terminal",
+                "title": "Claude Copywriter",
+                "preset": "claude",
+                "command": "claude",
+                "is_orchestrator": False,
+                "maestro": False,
+                "role": "Copywriting & Conteúdo",
+                "appearance_icon": "🟣",
+                "appearance_color": "#c084fc",
+                "theme": "dark",
+                "monitor_activity": False,
+                "x": 800,
+                "y": 150,
+                "width": 540,
+                "height": 340
+            },
+            {
+                "id": "term_cs_codex",
+                "type": "terminal",
+                "title": "Codex Automação",
+                "preset": "codex",
+                "command": "codex",
+                "is_orchestrator": False,
+                "maestro": False,
+                "role": "Integração & Tráfego",
+                "appearance_icon": "🟢",
+                "appearance_color": "#34d399",
+                "theme": "dark",
+                "monitor_activity": False,
+                "x": 800,
+                "y": 540,
+                "width": 540,
+                "height": 340
+            },
+            {
+                "id": "note_cs_guidelines",
+                "type": "note",
+                "title": "Diretrizes de Campanhas",
+                "content": "# Campanhas Sistema\nPlanejamento estratégico de tráfego, copywriting e testes A/B com agentes autônomos.",
+                "x": 200,
+                "y": 540,
+                "width": 420,
+                "height": 280
+            },
+            {
+                "id": "portal_cs_dashboard",
+                "type": "portal",
+                "title": "Dashboard de Métricas",
+                "url": "https://analytics.google.com",
+                "x": 1400,
+                "y": 150,
+                "width": 600,
+                "height": 480
+            }
+        ]
+    },
+    {
+        "name": "maestri-free",
+        "slug": "maestri-free",
+        "path": os.path.dirname(os.path.abspath(__file__)),
+        "icon": "📁",
+        "node_count": 6,
+        "agent_count": 4,
+        "nodes": [
+            {
+                "id": "term_mf_orch",
+                "type": "terminal",
+                "title": "Orquestrador Chefe",
+                "preset": "antigravity",
+                "command": "powershell.exe" if sys.platform.startswith("win") else os.environ.get("SHELL", "/bin/bash"),
+                "is_orchestrator": True,
+                "maestro": True,
+                "role": "Orquestrador",
+                "appearance_icon": "👑",
+                "appearance_color": "#facc15",
+                "theme": "dark",
+                "monitor_activity": True,
+                "x": 200,
+                "y": 150,
+                "width": 540,
+                "height": 340
+            },
+            {
+                "id": "term_mf_backend",
+                "type": "terminal",
+                "title": "Backend Python (FastAPI)",
+                "preset": "antigravity",
+                "command": "agy",
+                "is_orchestrator": False,
+                "maestro": False,
+                "role": "Backend & Core",
+                "appearance_icon": "✨",
+                "appearance_color": "#38bdf8",
+                "theme": "dark",
+                "monitor_activity": False,
+                "x": 800,
+                "y": 150,
+                "width": 540,
+                "height": 340
+            },
+            {
+                "id": "term_mf_claude",
+                "type": "terminal",
+                "title": "Claude Code Agent",
+                "preset": "claude",
+                "command": "claude",
+                "is_orchestrator": False,
+                "maestro": False,
+                "role": "Generalista",
+                "appearance_icon": "🟣",
+                "appearance_color": "#c084fc",
+                "theme": "dark",
+                "monitor_activity": False,
+                "x": 800,
+                "y": 540,
+                "width": 540,
+                "height": 340
+            },
+            {
+                "id": "term_mf_frontend",
+                "type": "terminal",
+                "title": "Frontend UI/UX",
+                "preset": "deepseek",
+                "command": "agy",
+                "is_orchestrator": False,
+                "maestro": False,
+                "role": "Frontend & Design",
+                "appearance_icon": "🎨",
+                "appearance_color": "#f43f5e",
+                "theme": "dark",
+                "monitor_activity": False,
+                "x": 200,
+                "y": 540,
+                "width": 540,
+                "height": 340
+            },
+            {
+                "id": "note_mf_scope",
+                "type": "note",
+                "title": "Escopo Global Maestri-free",
+                "content": "# Escopo Maestri-free\nWorkspace autônomo com suporte ConPTY/POSIX PTY nativo e barramento de contexto em tempo real.",
+                "x": 1400,
+                "y": 150,
+                "width": 420,
+                "height": 280
+            },
+            {
+                "id": "note_mf_tasks",
+                "type": "note",
+                "title": "Plano de Paridade",
+                "content": "# Paridade Oficial\n- Frente 1: PTY Multiplataforma\n- Frente 2: Física Verlet de Cordas\n- Frente 3: Window Controls\n- Frente 4: Ícones Vetoriais",
+                "x": 1400,
+                "y": 480,
+                "width": 420,
+                "height": 300
+            }
+        ]
+    },
+    {
+        "name": "criador-slides-ppt",
+        "slug": "criador-slides-ppt",
+        "path": os.path.join(os.path.dirname(os.path.abspath(__file__)), "projects", "criador-slides-ppt"),
+        "icon": "📁",
+        "node_count": 4,
+        "agent_count": 2,
+        "nodes": [
+            {
+                "id": "term_ppt_orch",
+                "type": "terminal",
+                "title": "Orquestrador de Apresentações",
+                "preset": "antigravity",
+                "command": "powershell.exe" if sys.platform.startswith("win") else os.environ.get("SHELL", "/bin/bash"),
+                "is_orchestrator": True,
+                "maestro": True,
+                "role": "Orquestrador",
+                "appearance_icon": "👑",
+                "appearance_color": "#facc15",
+                "theme": "dark",
+                "monitor_activity": True,
+                "x": 200,
+                "y": 150,
+                "width": 540,
+                "height": 340
+            },
+            {
+                "id": "term_ppt_claude",
+                "type": "terminal",
+                "title": "Claude Slide Designer",
+                "preset": "claude",
+                "command": "claude",
+                "is_orchestrator": False,
+                "maestro": False,
+                "role": "Designer de Slides",
+                "appearance_icon": "🟣",
+                "appearance_color": "#c084fc",
+                "theme": "dark",
+                "monitor_activity": False,
+                "x": 800,
+                "y": 150,
+                "width": 540,
+                "height": 340
+            },
+            {
+                "id": "term_ppt_codex",
+                "type": "terminal",
+                "title": "Codex PPTX Engine",
+                "preset": "codex",
+                "command": "codex",
+                "is_orchestrator": False,
+                "maestro": False,
+                "role": "Gerador python-pptx",
+                "appearance_icon": "🟢",
+                "appearance_color": "#34d399",
+                "theme": "dark",
+                "monitor_activity": False,
+                "x": 800,
+                "y": 540,
+                "width": 540,
+                "height": 340
+            },
+            {
+                "id": "note_ppt_briefing",
+                "type": "note",
+                "title": "Briefing da Apresentação",
+                "content": "# Apresentação Executiva\nDiretrizes de layout, fontes, cores e estrutura de tópicos para geração automatizada de decks.",
+                "x": 200,
+                "y": 540,
+                "width": 420,
+                "height": 280
+            }
+        ]
+    }
+]
+
+def _seed_workspace_if_needed(slug: str) -> bool:
+    """Ensures a canonical workspace project directory and project.json exist before loading."""
+    projects_dir = os.path.join(os.path.dirname(__file__), "projects")
+    proj_dir = os.path.join(projects_dir, slug)
+    proj_json = os.path.join(proj_dir, "project.json")
+    if os.path.exists(proj_json):
+        return True
+
+    seed = next((s for s in CANONICAL_DEFAULT_WORKSPACES if s["slug"] == slug or s["name"].lower().strip() == slug.lower().strip()), None)
+    if seed:
+        try:
+            os.makedirs(proj_dir, exist_ok=True)
+            template_data = {
+                "meta": {
+                    "name": seed["name"],
+                    "slug": seed["slug"],
+                    "version": "2.0.0",
+                    "working_directory": seed["path"],
+                    "orchestrator_node_id": seed["nodes"][0]["id"] if seed.get("nodes") else None,
+                    "theme": "dark"
+                },
+                "canvas": {
+                    "viewport": {"x": 0, "y": 0, "zoom": 1.0},
+                    "nodes": seed["nodes"],
+                    "edges": []
+                }
+            }
+            with open(proj_json, "w", encoding="utf-8") as f:
+                json.dump(template_data, f, indent=2, ensure_ascii=False)
+            return True
+        except Exception as e:
+            print(f"[WorkspaceSwitch] Erro ao criar projeto seed '{slug}': {e}")
+    return False
+
+# Requirement 1: Enriched workspaces list alias
+@app.get("/api/workspaces/list")
+async def list_workspaces():
+    projects_dir = os.path.join(os.path.dirname(__file__), "projects")
+    curr_ws = workspace_mgr.get_workspace()
+    active_slug = curr_ws.get("meta", {}).get("slug", "")
+
+    workspaces = []
+    seen_slugs = set()
+
+    if os.path.exists(projects_dir):
+        for entry in os.scandir(projects_dir):
+            if entry.is_dir():
+                slug = entry.name
+                proj_json = os.path.join(entry.path, "project.json")
+                name = entry.name
+                working_dir = ""
+                nodes = []
+                icon = "📁"
+                if os.path.exists(proj_json):
+                    try:
+                        with open(proj_json, "r", encoding="utf-8") as f:
+                            d = json.load(f)
+                            meta = d.get("meta", {})
+                            name = meta.get("name", entry.name)
+                            working_dir = meta.get("working_directory", "")
+                            icon = meta.get("icon", "📁")
+                            nodes = d.get("canvas", {}).get("nodes", [])
+                    except Exception:
+                        pass
+                agent_count = sum(1 for n in nodes if n.get("preset") in ['antigravity', 'claude', 'codex', 'deepseek'])
+                workspaces.append({
+                    "name": name,
+                    "slug": slug,
+                    "path": working_dir or entry.path,
+                    "node_count": len(nodes),
+                    "agent_count": agent_count,
+                    "icon": icon,
+                    "is_active": (slug == active_slug or (not active_slug and slug == "meu_projeto"))
+                })
+                seen_slugs.add(slug)
+                seen_slugs.add(name.lower().strip())
+
+    # Add canonical defaults if not already present or if only 1 project exists
+    for default_ws in CANONICAL_DEFAULT_WORKSPACES:
+        slug = default_ws["slug"]
+        norm_name = default_ws["name"].lower().strip()
+        if slug not in seen_slugs and norm_name not in seen_slugs:
+            workspaces.append({
+                "name": default_ws["name"],
+                "slug": slug,
+                "path": default_ws["path"],
+                "node_count": default_ws["node_count"],
+                "agent_count": default_ws["agent_count"],
+                "icon": default_ws.get("icon", "📁"),
+                "is_active": (slug == active_slug)
+            })
+            seen_slugs.add(slug)
+
+    return JSONResponse(
+        content={"status": "ok", "workspaces": workspaces},
+        headers={"Cache-Control": "no-store, no-cache, must-revalidate"}
+    )
+
+# Requirement 2: Switch workspace endpoint
+@app.post("/api/workspaces/{slug}/switch")
+async def switch_workspace(slug: str):
+    _seed_workspace_if_needed(slug)
+    data = workspace_mgr.load_project(slug)
+    if data:
+        cwd = data.get("meta", {}).get("working_directory")
+        if cwd and os.path.exists(cwd):
+            await terminal_mgr.update_all_sessions_cwd(cwd)
+        return JSONResponse(
+            content={"status": "ok", "workspace": data},
+            headers={"Cache-Control": "no-store, no-cache, must-revalidate"}
+        )
+    return JSONResponse(status_code=404, content={"status": "error", "message": f"Workspace '{slug}' não encontrado."})
 
 # Requirement 6: Native folder picker dialog
 @app.get("/api/browse-directory")
@@ -269,6 +652,154 @@ async def open_workspace_directory():
         except Exception as e:
             return {"status": "error", "message": str(e)}
     return JSONResponse(status_code=404, content={"status": "error", "message": "Diretório não encontrado"})
+
+
+# =========================================================================
+# FILE TREE & FILE SYSTEM ENDPOINTS (MAESTRI & OPEN-MAESTRI PARITY)
+# =========================================================================
+
+def _build_directory_tree(dir_path: str, max_depth: int = 3, current_depth: int = 0) -> List[Dict[str, Any]]:
+    if current_depth > max_depth or not os.path.exists(dir_path) or not os.path.isdir(dir_path):
+        return []
+
+    entries = []
+    ignored_names = {".git", "node_modules", "__pycache__", ".venv", "venv", ".idea", ".DS_Store"}
+
+    try:
+        items = sorted(os.listdir(dir_path), key=lambda x: (not os.path.isdir(os.path.join(dir_path, x)), x.lower()))
+    except Exception:
+        return []
+
+    for name in items:
+        if name in ignored_names:
+            continue
+        full_path = os.path.join(dir_path, name)
+        is_dir = os.path.isdir(full_path)
+        ext = os.path.splitext(name)[1].lstrip(".").lower() if not is_dir else ""
+
+        entry: Dict[str, Any] = {
+            "name": name,
+            "path": full_path,
+            "type": "directory" if is_dir else "file",
+            "extension": ext
+        }
+
+        if is_dir:
+            if current_depth < max_depth:
+                entry["children"] = _build_directory_tree(full_path, max_depth, current_depth + 1)
+            else:
+                entry["children"] = []
+        else:
+            try:
+                entry["size"] = os.path.getsize(full_path)
+            except Exception:
+                entry["size"] = 0
+
+        entries.append(entry)
+
+    return entries
+
+
+@app.get("/api/fs/tree")
+async def get_fs_tree(path: Optional[str] = None, max_depth: int = 3):
+    ws = workspace_mgr.get_workspace()
+    default_root = ws.get("meta", {}).get("working_directory") or os.getcwd()
+    target_path = os.path.abspath(path) if path else os.path.abspath(default_root)
+
+    if not os.path.exists(target_path) or not os.path.isdir(target_path):
+        return JSONResponse(status_code=400, content={"status": "error", "message": f"Diretório não encontrado: {target_path}"})
+
+    entries = _build_directory_tree(target_path, max_depth=max_depth)
+    return {
+        "status": "ok",
+        "root": target_path,
+        "name": os.path.basename(target_path) or target_path,
+        "entries": entries
+    }
+
+
+@app.get("/api/fs/content")
+async def get_fs_content(path: str):
+    if not os.path.exists(path) or not os.path.isfile(path):
+        return JSONResponse(status_code=404, content={"status": "error", "message": "Arquivo não encontrado."})
+
+    try:
+        # Limit to 500KB for preview safety
+        size = os.path.getsize(path)
+        if size > 500_000:
+            with open(path, "r", encoding="utf-8", errors="replace") as f:
+                content = f.read(500_000) + "\n\n... [Truncado para pré-visualização rápida] ..."
+        else:
+            with open(path, "r", encoding="utf-8", errors="replace") as f:
+                content = f.read()
+
+        ext = os.path.splitext(path)[1].lstrip(".").lower()
+        return {
+            "status": "ok",
+            "path": path,
+            "name": os.path.basename(path),
+            "extension": ext,
+            "size": size,
+            "content": content
+        }
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
+
+
+class FSCreateRequest(BaseModel):
+    path: str
+    type: str = "file"  # "file" or "directory"
+
+@app.post("/api/fs/create")
+async def create_fs_item(req: FSCreateRequest):
+    try:
+        if req.type == "directory":
+            os.makedirs(req.path, exist_ok=True)
+        else:
+            parent = os.path.dirname(req.path)
+            if parent and not os.path.exists(parent):
+                os.makedirs(parent, exist_ok=True)
+            if not os.path.exists(req.path):
+                with open(req.path, "w", encoding="utf-8") as f:
+                    f.write("")
+        return {"status": "ok", "path": req.path}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
+
+
+class FSDeleteRequest(BaseModel):
+    path: str
+
+@app.post("/api/fs/delete")
+async def delete_fs_item(req: FSDeleteRequest):
+    if not os.path.exists(req.path):
+        return JSONResponse(status_code=404, content={"status": "error", "message": "Item não encontrado."})
+    try:
+        import shutil
+        if os.path.isdir(req.path):
+            shutil.rmtree(req.path)
+        else:
+            os.remove(req.path)
+        return {"status": "ok", "deleted": req.path}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
+
+
+class FSRenameRequest(BaseModel):
+    old_path: str
+    new_name: str
+
+@app.post("/api/fs/rename")
+async def rename_fs_item(req: FSRenameRequest):
+    if not os.path.exists(req.old_path):
+        return JSONResponse(status_code=404, content={"status": "error", "message": "Item original não encontrado."})
+    try:
+        parent = os.path.dirname(req.old_path)
+        new_path = os.path.join(parent, req.new_name)
+        os.rename(req.old_path, new_path)
+        return {"status": "ok", "old_path": req.old_path, "new_path": new_path}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
 
 # Requirement 4: Inter-node communication (piping output to connected nodes)
 @app.post("/api/context/broadcast")
@@ -500,6 +1031,155 @@ async def get_token_usage():
 @app.get("/api/audit")
 async def get_audit_trail():
     return orchestrator.get_audit_trail()
+
+# Requirement 3: Terminal Node Update & Creation Endpoints with enriched fields
+def _apply_node_data(node: Dict[str, Any], payload: Dict[str, Any]):
+    # Basic fields
+    for field in ["title", "preset", "command", "cwd", "type", "x", "y", "width", "height", "is_controllable"]:
+        if field in payload and payload[field] is not None:
+            node[field] = payload[field]
+
+    # Requirement 3: maestro (bool) & is_orchestrator synchronization
+    if "maestro" in payload and payload["maestro"] is not None:
+        val = bool(payload["maestro"])
+        node["maestro"] = val
+        node["is_orchestrator"] = val
+    elif "is_orchestrator" in payload and payload["is_orchestrator"] is not None:
+        val = bool(payload["is_orchestrator"])
+        node["is_orchestrator"] = val
+        node["maestro"] = val
+
+    # Requirement 3: monitor_activity (bool)
+    if "monitor_activity" in payload and payload["monitor_activity"] is not None:
+        node["monitor_activity"] = bool(payload["monitor_activity"])
+
+    # Requirement 3: appearance_icon (str)
+    if "appearance_icon" in payload and payload["appearance_icon"] is not None:
+        icon_val = str(payload["appearance_icon"])
+        node["appearance_icon"] = icon_val
+        node["icon"] = icon_val
+
+    # Requirement 3: appearance_color (str)
+    if "appearance_color" in payload and payload["appearance_color"] is not None:
+        col_val = str(payload["appearance_color"])
+        node["appearance_color"] = col_val
+        node["borderColor"] = col_val
+
+    # Requirement 3: theme (str)
+    if "theme" in payload and payload["theme"] is not None:
+        theme_val = str(payload["theme"])
+        node["theme"] = theme_val
+        node["terminalTheme"] = theme_val
+
+    # Requirement 3: role (str)
+    if "role" in payload and payload["role"] is not None:
+        role_val = str(payload["role"])
+        node["role"] = role_val
+        resps = node.setdefault("responsibilities", [])
+        if role_val not in resps:
+            resps.append(role_val)
+
+    if "responsibilities" in payload and isinstance(payload["responsibilities"], list):
+        node["responsibilities"] = payload["responsibilities"]
+
+
+@app.post("/api/nodes")
+async def create_node_endpoint(payload: Dict[str, Any]):
+    ws = workspace_mgr.get_workspace()
+    canvas = ws.setdefault("canvas", {})
+    nodes = canvas.setdefault("nodes", [])
+
+    node_id = payload.get("id") or f"term_{int(time.time() * 1000)}"
+    default_cmd = "powershell.exe" if sys.platform.startswith("win") else os.environ.get("SHELL", "/bin/bash")
+    new_node = {
+        "id": node_id,
+        "type": payload.get("type", "terminal"),
+        "title": payload.get("title", "Terminal"),
+        "preset": payload.get("preset", "shell"),
+        "command": payload.get("command", default_cmd),
+        "cwd": payload.get("cwd") or ws.get("meta", {}).get("working_directory", os.getcwd()),
+        "x": payload.get("x", 200),
+        "y": payload.get("y", 200),
+        "width": payload.get("width", 540),
+        "height": payload.get("height", 340),
+        "is_orchestrator": bool(payload.get("is_orchestrator", False) or payload.get("maestro", False)),
+        "is_controllable": bool(payload.get("is_controllable", True)),
+        "responsibilities": payload.get("responsibilities", []),
+        "maestro": bool(payload.get("maestro", False) or payload.get("is_orchestrator", False)),
+        "monitor_activity": bool(payload.get("monitor_activity", False)),
+        "appearance_icon": payload.get("appearance_icon", ""),
+        "appearance_color": payload.get("appearance_color", ""),
+        "theme": payload.get("theme", "dark"),
+        "role": payload.get("role", "")
+    }
+    _apply_node_data(new_node, payload)
+    nodes.append(new_node)
+    workspace_mgr.save_workspace(ws)
+    return {"status": "ok", "node": new_node}
+
+
+@app.get("/api/nodes/{node_id}")
+async def get_node_endpoint(node_id: str):
+    ws = workspace_mgr.get_workspace()
+    nodes = ws.get("canvas", {}).get("nodes", [])
+    node = next((n for n in nodes if n.get("id") == node_id), None)
+    if not node:
+        return JSONResponse(status_code=404, content={"status": "error", "message": f"Nó '{node_id}' não encontrado."})
+    return {"status": "ok", "node": node}
+
+
+@app.patch("/api/nodes/{node_id}")
+@app.put("/api/nodes/{node_id}")
+@app.post("/api/nodes/{node_id}")
+async def update_node_endpoint(node_id: str, payload: Dict[str, Any]):
+    ws = workspace_mgr.get_workspace()
+    nodes = ws.get("canvas", {}).get("nodes", [])
+    node = next((n for n in nodes if n.get("id") == node_id), None)
+    if not node:
+        return JSONResponse(status_code=404, content={"status": "error", "message": f"Nó '{node_id}' não encontrado."})
+
+    _apply_node_data(node, payload)
+
+    # Sync with terminal manager session if running
+    if node_id in terminal_mgr.sessions:
+        sess = terminal_mgr.sessions[node_id]
+        if "title" in node:
+            sess.title = node["title"]
+        if "role" in node:
+            sess.role = node["role"]
+        if "appearance_icon" in node:
+            sess.appearance_icon = node["appearance_icon"]
+        if "appearance_color" in node:
+            sess.appearance_color = node["appearance_color"]
+        if "theme" in node:
+            sess.theme = node["theme"]
+        if "monitor_activity" in node:
+            sess.monitor_activity = node["monitor_activity"]
+        if "maestro" in node:
+            sess.maestro = node["maestro"]
+            terminal_mgr.set_orchestrator(node_id, node["maestro"])
+
+    workspace_mgr.save_workspace(ws)
+    return {"status": "ok", "node": node}
+
+
+@app.delete("/api/nodes/{node_id}")
+async def delete_node_endpoint(node_id: str):
+    ws = workspace_mgr.get_workspace()
+    nodes = ws.get("canvas", {}).get("nodes", [])
+    edges = ws.get("canvas", {}).get("edges", [])
+
+    new_nodes = [n for n in nodes if n.get("id") != node_id]
+    if len(new_nodes) == len(nodes):
+        return JSONResponse(status_code=404, content={"status": "error", "message": f"Nó '{node_id}' não encontrado."})
+
+    ws["canvas"]["nodes"] = new_nodes
+    ws["canvas"]["edges"] = [e for e in edges if e.get("from") != node_id and e.get("to") != node_id]
+
+    await terminal_mgr.remove_session(node_id)
+    workspace_mgr.save_workspace(ws)
+    return {"status": "ok", "deleted": node_id}
+
 
 @app.get("/api/nodes/{node_id}/note")
 async def get_node_note(node_id: str):

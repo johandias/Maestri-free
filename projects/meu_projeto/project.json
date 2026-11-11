@@ -1,28 +1,71 @@
 {
   "meta": {
     "name": "Meu Projeto",
+    "slug": "meu_projeto",
     "version": "2.0.0",
     "theme": "dark",
     "orchestrator_node_id": null,
-    "slug": "meu_projeto"
+    "working_directory": null
   },
-  "groups": [
-    {
-      "id": "group_main",
-      "title": "Meu Projeto",
-      "expanded": true,
-      "items": []
-    }
-  ],
+  "groups": [],
   "canvas": {
     "viewport": {
-      "x": 200,
-      "y": 120,
-      "zoom": 1.0
+      "x": 996.0345410642922,
+      "y": 447.600709585055,
+      "zoom": 0.34087892551573784
     },
-    "nodes": [],
+    "nodes": [
+      {
+        "id": "term_test_001",
+        "type": "terminal",
+        "title": "Claude Code Agent",
+        "x": 200,
+        "y": 200,
+        "width": 520,
+        "height": 320,
+        "is_controllable": true,
+        "preset": "claude"
+      },
+      {
+        "id": "term_1794367847227",
+        "type": "terminal",
+        "x": 282,
+        "y": 115,
+        "width": 520,
+        "height": 320,
+        "title": "Antigravity",
+        "icon": "✨",
+        "command": "agy",
+        "preset": "antigravity",
+        "cwd": "",
+        "is_orchestrator": false,
+        "is_controllable": true,
+        "responsibilities": [],
+        "borderColor": "#3b82f6",
+        "terminalTheme": "vscode",
+        "status": "running"
+      },
+      {
+        "id": "term_1794368142559",
+        "type": "terminal",
+        "x": -662,
+        "y": 53,
+        "width": 520,
+        "height": 320,
+        "title": "Antigravity",
+        "icon": "💻",
+        "command": "powershell.exe",
+        "preset": "antigravity",
+        "cwd": "",
+        "is_orchestrator": false,
+        "is_controllable": true,
+        "responsibilities": [],
+        "borderColor": "#3b82f6",
+        "terminalTheme": "vscode",
+        "status": "running"
+      }
+    ],
     "edges": []
   },
-  "shared_context": {},
-  "_version": 1794316318500
+  "_version": 1794373788887
 }

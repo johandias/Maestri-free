@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Maestri
+GenericName=AI Orchestrator Desktop
+Comment=Desktop Multi-Agent AI Orchestration Platform
+Exec=/home/johan/GoogleDrive/Dev/Maestri-free/start.sh
+Icon=/home/johan/GoogleDrive/Dev/Maestri-free/frontend/app-icon.png
+Terminal=false
+Categories=Development;IDE;
+StartupNotify=true
+StartupWMClass=Maestri
