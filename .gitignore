@@ -1,0 +1,45 @@
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.tmp*
+.pytest_cache/
+
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+
+# Session logs and runtime state
+data/current_workspace.json
+data/session_state.json
+data/sessions/
+*.log
+
+# User projects (keep clean default template 'meu_projeto')
+projects/*
+!projects/meu_projeto/
+!projects/meu_projeto/**
+
+# Research chat exports & notes
+*.json.chat
+Orquestrador IA em Python.json
+
+# Environment variables, credentials & secrets
+.env
+.env.*
+*.key
+*.pem
+credentials.json
+
+# Operating System files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
+*.swo

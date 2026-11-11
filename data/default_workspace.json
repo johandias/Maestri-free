@@ -1,0 +1,216 @@
+{
+  "meta": {
+    "name": "Maestri Workspace",
+    "version": "1.0.0",
+    "theme": "dark"
+  },
+  "groups": [
+    {
+      "id": "group_saas",
+      "title": "My New SaaS",
+      "expanded": true,
+      "items": [
+        {
+          "id": "item_app",
+          "name": "App",
+          "icon": "app",
+          "badge": 1,
+          "status": "active"
+        },
+        {
+          "id": "item_website",
+          "name": "Website",
+          "icon": "website",
+          "badge": 3,
+          "alertBadge": 1,
+          "status": "idle"
+        }
+      ]
+    },
+    {
+      "id": "group_side",
+      "title": "Side Project",
+      "expanded": true,
+      "items": [
+        {
+          "id": "item_cli",
+          "name": "CLI Tool",
+          "icon": "cli",
+          "badge": 1,
+          "status": "idle"
+        }
+      ]
+    }
+  ],
+  "canvas": {
+    "viewport": {
+      "x": 200,
+      "y": 80,
+      "zoom": 1.0
+    },
+    "nodes": [
+      {
+        "id": "node_title_arch",
+        "type": "text",
+        "x": 300,
+        "y": 140,
+        "title": "Architecture",
+        "style": {
+          "fontSize": 32,
+          "underline": true,
+          "underlineColor": "#f43f5e",
+          "color": "#f8fafc"
+        }
+      },
+      {
+        "id": "node_user",
+        "type": "diagram",
+        "x": 300,
+        "y": 240,
+        "width": 140,
+        "height": 90,
+        "title": "User",
+        "subtitle": "Client / Browser",
+        "borderColor": "#64748b",
+        "bgStyle": "solid",
+        "bgColor": "#1e293b"
+      },
+      {
+        "id": "node_auth",
+        "type": "diagram",
+        "x": 480,
+        "y": 240,
+        "width": 150,
+        "height": 90,
+        "title": "Auth",
+        "subtitle": "OAuth2 + JWT",
+        "borderColor": "#10b981",
+        "bgStyle": "solid",
+        "bgColor": "#064e3b"
+      },
+      {
+        "id": "node_dash",
+        "type": "diagram",
+        "x": 670,
+        "y": 240,
+        "width": 150,
+        "height": 90,
+        "title": "Dashboard",
+        "subtitle": "React SPA",
+        "borderColor": "#3b82f6",
+        "bgStyle": "solid",
+        "bgColor": "#1e3a8a"
+      },
+      {
+        "id": "node_api",
+        "type": "diagram",
+        "x": 860,
+        "y": 240,
+        "width": 150,
+        "height": 90,
+        "title": "API",
+        "subtitle": "REST + WS",
+        "borderColor": "#a855f7",
+        "bgStyle": "solid",
+        "bgColor": "#581c87"
+      },
+      {
+        "id": "node_db",
+        "type": "diagram",
+        "x": 750,
+        "y": 420,
+        "width": 200,
+        "height": 110,
+        "title": "Database",
+        "subtitle": "PostgreSQL",
+        "borderColor": "#f59e0b",
+        "bgStyle": "hatched",
+        "bgColor": "#78350f"
+      },
+      {
+        "id": "node_term_app",
+        "type": "terminal",
+        "x": 1050,
+        "y": 140,
+        "width": 520,
+        "height": 380,
+        "title": "App - Claude Code",
+        "command": "claude",
+        "preset": "claude",
+        "cwd": "",
+        "status": "running",
+        "history": [
+          "Maestri Orchestrator v1.0 [Online]",
+          "Loading skill: agent-orchestrator-agent",
+          "Loaded agents: [Orchestrator, Programmer, QA-Reviewer, Git-Manager]",
+          "> review the code",
+          "Claude Code: All session components initialized.",
+          "Ready for commands."
+        ]
+      },
+      {
+        "id": "node_term_codex",
+        "type": "terminal",
+        "x": 1050,
+        "y": 570,
+        "width": 520,
+        "height": 260,
+        "title": "Codex",
+        "command": "codex",
+        "preset": "codex",
+        "cwd": "",
+        "status": "idle",
+        "history": [
+          "OpenAI Codex CLI (v0.114.0)",
+          "model: gpt-5.4-high (ready)",
+          "directory: ~/Developer/Demo",
+          "Tip: Use /mcp to list configured MCP tools."
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "id": "e1",
+        "from": "node_user",
+        "to": "node_auth",
+        "style": "solid",
+        "color": "#64748b"
+      },
+      {
+        "id": "e2",
+        "from": "node_auth",
+        "to": "node_dash",
+        "style": "solid",
+        "color": "#10b981"
+      },
+      {
+        "id": "e3",
+        "from": "node_dash",
+        "to": "node_api",
+        "style": "solid",
+        "color": "#3b82f6"
+      },
+      {
+        "id": "e4",
+        "from": "node_dash",
+        "to": "node_db",
+        "style": "solid",
+        "color": "#3b82f6"
+      },
+      {
+        "id": "e5",
+        "from": "node_api",
+        "to": "node_db",
+        "style": "solid",
+        "color": "#a855f7"
+      },
+      {
+        "id": "e6",
+        "from": "node_term_app",
+        "to": "node_term_codex",
+        "style": "dashed",
+        "color": "#38bdf8"
+      }
+    ]
+  }
+}

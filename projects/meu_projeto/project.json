@@ -1,0 +1,28 @@
+{
+  "meta": {
+    "name": "Meu Projeto",
+    "version": "2.0.0",
+    "theme": "dark",
+    "orchestrator_node_id": null,
+    "slug": "meu_projeto"
+  },
+  "groups": [
+    {
+      "id": "group_main",
+      "title": "Meu Projeto",
+      "expanded": true,
+      "items": []
+    }
+  ],
+  "canvas": {
+    "viewport": {
+      "x": 200,
+      "y": 120,
+      "zoom": 1.0
+    },
+    "nodes": [],
+    "edges": []
+  },
+  "shared_context": {},
+  "_version": 1794316318500
+}

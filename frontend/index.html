@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maestri - AI Orchestrator</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico?v=3.1">
+  <link rel="icon" type="image/svg+xml" href="/static/logo.svg?v=3.1">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png?v=3.1">
+  <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png?v=3.1">
+  <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png?v=3.1">
+  <link rel="icon" type="image/png" sizes="512x512" href="/static/icon-512.png?v=3.1">
+  <link rel="apple-touch-icon" href="/static/icon-192.png?v=3.1">
+  <link rel="manifest" href="/manifest.json?v=3.1">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="stylesheet" href="/static/css/xterm.css?v=3.2">
+  <link rel="stylesheet" href="/static/css/theme.css?v=3.2">
+</head>
+<body>
+
+  <!-- Infinite Canvas Container (Pan with scroll/middle-mouse only) -->
+  <div id="canvas-container">
+    <div id="canvas-world">
+      <!-- SVG Layer for Directed Connection Arrows -->
+      <svg id="svg-layer">
+        <defs>
+          <marker id="arrowhead" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+            <polygon points="0 0, 9 3.5, 0 7" fill="#38bdf8" />
+          </marker>
+          <marker id="arrowhead-orch" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+            <polygon points="0 0, 9 3.5, 0 7" fill="#eab308" />
+          </marker>
+          <marker id="arrowhead-purple" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+            <polygon points="0 0, 9 3.5, 0 7" fill="#a855f7" />
+          </marker>
+          <marker id="arrowhead-blue" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+            <polygon points="0 0, 9 3.5, 0 7" fill="#3b82f6" />
+          </marker>
+          <marker id="arrowhead-cyan" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+            <polygon points="0 0, 9 3.5, 0 7" fill="#06b6d4" />
+          </marker>
+          <marker id="arrowhead-transmitting" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+            <polygon points="0 0, 9 3.5, 0 7" fill="#f59e0b" />
+          </marker>
+          <marker id="arrowhead-processing" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+            <polygon points="0 0, 9 3.5, 0 7" fill="#10b981" />
+          </marker>
+        </defs>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Left Floating Sidebar (Workspaces, Projects & Nodes) -->
+  <aside id="floating-sidebar" class="floating-sidebar">
+    <div class="sidebar-header">
+      <div class="window-dots">
+        <span class="dot red" title="Limpar Canvas" onclick="document.getElementById('btn-reset-workspace').click()"></span>
+        <span class="dot yellow" title="Recolher" id="btn-toggle-sidebar"></span>
+        <span class="dot green" title="Ajustar à Tela" onclick="window.MaestriApp.canvas.fitView()"></span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 7px; user-select: none;">
+        <img src="/static/favicon-32x32.png" alt="Maestri" style="width: 18px; height: 18px; border-radius: 4px; display: block; box-shadow: 0 0 8px rgba(129, 140, 248, 0.4);">
+        <span style="font-weight: 700; font-size: 11px; letter-spacing: 0.6px; color: #cbd5e1; text-transform: uppercase;">MAESTRI</span>
+      </div>
+      <div class="header-actions">
+        <button id="btn-sidebar-add" class="icon-btn" title="Novo Terminal">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Requirement 2: Project Selector & Creation inside ./projects/ -->
+    <div class="project-selector-box" style="display: flex; gap: 6px; align-items: center;">
+      <button id="btn-current-project" class="project-select-btn" style="flex: 1;" title="Navegador de Projetos & Squads">
+        <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+          <span>📁</span>
+          <span id="current-project-label">Meu Projeto</span>
+        </div>
+        <span style="font-size: 10px; color: #94a3b8;">▼</span>
+      </button>
+      <button id="btn-sidebar-new-project" class="icon-btn" style="width: 32px; height: 32px; border-radius: 8px; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #60a5fa;" title="Criar Novo Projeto com Foco & Instâncias">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      </button>
+    </div>
+
+    <div class="sidebar-search">
+      <div class="search-input-wrapper">
+        <svg class="search-icon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="text" id="sidebar-search-input" placeholder="Filtrar nós do canvas..." autocomplete="off" spellcheck="false">
+      </div>
+    </div>
+
+    <div id="sidebar-tree-container" class="sidebar-tree">
+      <!-- Populated dynamically with active nodes -->
+    </div>
+
+    <div class="sidebar-footer">
+      <button id="btn-sidebar-add-term" class="btn-sidebar-action" title="Adicionar Terminal">
+        <span>+ Terminal</span>
+      </button>
+      <button id="btn-sidebar-add-diag" class="btn-sidebar-action" title="Adicionar Bloco">
+        <span>+ Bloco</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Floating Top Toolbar (Frosted Glass Acrylic with Core Actions + Flexible Tools Menu) -->
+  <header class="floating-topbar">
+    <button class="toolbar-btn active" id="btn-tool-select" title="Ferramenta Seleção (Ponteiro Normal)">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3l7 18 3-7 7-3L3 3z"></path></svg>
+      <span>Seleção</span>
+    </button>
+    <button class="toolbar-btn" id="btn-tool-hand" title="Mão de Arrasto (Pan)">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 11V6a2 2 0 0 0-4 0v5M14 10V4a2 2 0 0 0-4 0v6M10 10V2a2 2 0 0 0-4 0v10M6 13a6 6 0 0 0 12 0v-2"></path></svg>
+      <span>Arrastar</span>
+    </button>
+
+    <div class="toolbar-divider"></div>
+
+    <button class="toolbar-btn" id="btn-tool-terminal" title="Clique ou Arraste no Canvas para Criar Terminal">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+      <span>Terminal</span>
+    </button>
+    <button class="toolbar-btn" id="btn-tool-connect" title="Conectar Nós para Compartilhar Saídas">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+      <span>Conectar</span>
+    </button>
+
+    <div class="toolbar-divider"></div>
+
+    <!-- Orchestrator Execution Tool -->
+    <button class="toolbar-btn orch-top-btn" id="btn-tool-run" title="Comandar Nós Conectados via Orquestrador Chefe">
+      <span>👑 Orquestrar</span>
+    </button>
+
+    <div class="toolbar-divider"></div>
+
+    <!-- Navegador de Projetos Topbar -->
+    <button class="toolbar-btn" id="btn-top-projects" title="Abrir Navegador de Projetos & Squads de IA">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+      <span>Projetos</span>
+    </button>
+
+    <div class="toolbar-divider"></div>
+
+    <!-- Workspace Working Directory Selector (Accessed by all AIs & Terminals) -->
+    <div class="workspace-dir-box" id="workspace-dir-box">
+      <button class="toolbar-btn dir-pill-btn" id="btn-select-workspace-dir" title="Selecionar pasta do projeto onde as IAs e terminais vão editar arquivos">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+        </svg>
+        <span id="workspace-dir-label">Pasta: Projeto</span>
+      </button>
+      <button class="toolbar-btn icon-only-btn" id="btn-open-dir-explorer" title="Abrir pasta no Windows Explorer">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+          <polyline points="15 3 21 3 21 9"></polyline>
+          <line x1="10" y1="14" x2="21" y2="3"></line>
+        </svg>
+      </button>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <!-- Zero Context Loss Persistence Indicator -->
+    <div class="persistence-status-pill" id="persistence-status-pill" title="Persistência Durável Ativa: todo o contexto, nós e saídas de terminal são salvos no disco sem perda ao fechar (Clique para sincronizar agora)">
+      <span class="persistence-dot"></span>
+      <span>Contexto Salvo</span>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <!-- Flexible Tools Dropdown (Menu Flexível em Vidro Fosco) -->
+    <div class="flexible-menu-container" id="flexible-menu-container">
+      <button class="toolbar-btn flexible-menu-trigger" id="btn-more-tools" title="Menu Flexível de Ferramentas">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="1.5"></circle>
+          <circle cx="19" cy="12" r="1.5"></circle>
+          <circle cx="5" cy="12" r="1.5"></circle>
+        </svg>
+        <span>Mais</span>
+      </button>
+
+      <div class="flexible-dropdown-menu" id="more-tools-dropdown" style="display: none;">
+        <div class="dropdown-header">Ferramentas de Criação</div>
+        <button class="dropdown-item" id="btn-tool-note">
+          <svg width="14" height="14" fill="none" stroke="#f59e0b" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+          <span>🧠 Anotação de Contexto</span>
+        </button>
+        <button class="dropdown-item" id="btn-tool-diagram">
+          <svg width="14" height="14" fill="none" stroke="#3b82f6" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
+          <span>🔲 Bloco de Diagrama</span>
+        </button>
+        <button class="dropdown-item" id="btn-tool-text">
+          <span style="font-weight: 700; font-size: 13px; color: #38bdf8;">Aa</span>
+          <span>Texto / Rótulo</span>
+        </button>
+        <button class="dropdown-item" id="btn-tool-portal">
+          <svg width="14" height="14" fill="none" stroke="#a855f7" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+          <span>🌐 Portal Web</span>
+        </button>
+
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-header">Projeto & Sessão</div>
+        <button class="dropdown-item" id="btn-tool-save">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+          <span>Salvar Projeto</span>
+        </button>
+        <button class="dropdown-item" id="btn-tool-projects">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+          <span>Gerenciar Projetos</span>
+        </button>
+        <button class="dropdown-item" id="btn-view-json">
+          <span style="font-family: monospace; font-size: 13px;">{ }</span>
+          <span>Exportar JSON</span>
+        </button>
+        <button class="dropdown-item danger" id="btn-reset-workspace">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+          <span>Limpar Canvas</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Bottom Right Controls: AI Tokens Monitor & Zoom / Fit View -->
+  <div class="canvas-bottom-wrapper">
+    <!-- Active AIs Token Pool Indicator (Frosted Glass Capsule) -->
+    <div id="ai-tokens-capsule" class="ai-tokens-capsule" title="Clique para ver o consumo e cota de tokens por IA">
+      <div class="ai-tokens-title">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+        <span>Tokens:</span>
+      </div>
+      <div id="ai-tokens-pills" class="ai-tokens-pills">
+        <span class="token-loading-text">Carregando...</span>
+      </div>
+    </div>
+
+    <!-- Zoom & Fit View -->
+    <div class="canvas-bottom-controls">
+      <button id="btn-fit-view" class="zoom-btn" title="Enquadrar todos os nós na tela">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+      </button>
+      <button id="btn-zoom-out" class="zoom-btn" title="Diminuir Zoom">−</button>
+      <span id="zoom-level-text" class="zoom-level" title="Clique para 100%">100%</span>
+      <button id="btn-zoom-in" class="zoom-btn" title="Aumentar Zoom">+</button>
+    </div>
+  </div>
+
+  <!-- Detailed AI Tokens Popover (Frosted Glass) -->
+  <div id="ai-tokens-popover" class="ai-tokens-popover hidden">
+    <div class="tokens-popover-header">
+      <div class="tokens-popover-title">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+        <span>Cotas de Tokens por IA no Workspace</span>
+      </div>
+      <button id="btn-close-tokens-popover" class="tokens-popover-close">✕</button>
+    </div>
+    <div id="tokens-popover-list" class="tokens-popover-list"></div>
+    <div class="tokens-popover-footer">
+      <span>Capacidade de contexto e tokens restantes calculados em tempo real</span>
+    </div>
+  </div>
+
+  <!-- Modal "New Terminal" with Antigravity & Native Folder Picker -->
+  <div id="terminal-modal-overlay" class="modal-overlay">
+    <div class="modal-window">
+      <div class="modal-title">New Terminal</div>
+
+      <div class="quick-start-label">Quick Start Presets</div>
+      <div class="quick-start-grid">
+        <!-- Requirement 3: Antigravity added -->
+        <div class="quick-card active" data-preset="antigravity">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+          <span>Antigravity</span>
+        </div>
+        <div class="quick-card" data-preset="claude">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3m0 14v3M2 12h3m14 0h3m-3.5-6.5-2.1 2.1m-8.8 8.8-2.1 2.1m0-13 2.1 2.1m8.8 8.8 2.1 2.1"></path></svg>
+          <span>Claude Code</span>
+        </div>
+        <div class="quick-card" data-preset="codex">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-2.04z"></path><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-2.04z"></path></svg>
+          <span>Codex</span>
+        </div>
+        <div class="quick-card" data-preset="shell">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+          <span>Shell</span>
+        </div>
+      </div>
+
+      <div class="modal-tabs">
+        <button class="modal-tab-btn active" data-tab="details">Details</button>
+        <button class="modal-tab-btn" data-tab="appearance">Appearance</button>
+      </div>
+
+      <div id="tab-view-details">
+        <div class="form-group">
+          <label>Nome do Terminal / Agente</label>
+          <input type="text" id="input-term-name" class="form-input" value="Antigravity">
+        </div>
+
+        <!-- Custom Icon Selector for Window -->
+        <div class="form-group">
+          <label>Ícone Personalizado da Janela</label>
+          <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 6px;">
+            <input type="text" id="input-term-icon" class="form-input" style="width: 60px; text-align: center; font-size: 18px;" value="💻">
+            <span style="font-size: 11px; color: #94a3b8;">Escolha um ícone rápido abaixo ou digite qualquer emoji:</span>
+          </div>
+          <div class="quick-icon-grid" id="quick-icon-picker">
+            <button type="button" class="quick-icon-btn active" data-icon="💻">💻</button>
+            <button type="button" class="quick-icon-btn" data-icon="👑">👑</button>
+            <button type="button" class="quick-icon-btn" data-icon="✨">✨</button>
+            <button type="button" class="quick-icon-btn" data-icon="🧠">🧠</button>
+            <button type="button" class="quick-icon-btn" data-icon="⚡">⚡</button>
+            <button type="button" class="quick-icon-btn" data-icon="🤖">🤖</button>
+            <button type="button" class="quick-icon-btn" data-icon="🎨">🎨</button>
+            <button type="button" class="quick-icon-btn" data-icon="📦">📦</button>
+            <button type="button" class="quick-icon-btn" data-icon="🧪">🧪</button>
+            <button type="button" class="quick-icon-btn" data-icon="🛡️">🛡️</button>
+            <button type="button" class="quick-icon-btn" data-icon="🚀">🚀</button>
+            <button type="button" class="quick-icon-btn" data-icon="🌐">🌐</button>
+            <button type="button" class="quick-icon-btn" data-icon="📁">📁</button>
+            <button type="button" class="quick-icon-btn" data-icon="🔥">🔥</button>
+            <button type="button" class="quick-icon-btn" data-icon="⚙️">⚙️</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Comando Executável na sua Máquina</label>
+          <input type="text" id="input-term-cmd" class="form-input" value="powershell.exe">
+        </div>
+        <!-- Requirement 6: Native folder picker button -->
+        <div class="form-group">
+          <label>Pasta de Trabalho (Execução na sua Máquina)</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="input-term-cwd" class="form-input" placeholder="Pasta do projeto na sua máquina">
+            <button type="button" id="btn-browse-cwd" class="btn-secondary" style="white-space: nowrap;">📂 Procurar...</button>
+          </div>
+        </div>
+
+        <!-- Requirement: Definir Responsabilidades do Agente ao Criar -->
+        <div class="form-group">
+          <label>Responsabilidades & Especialidades do Agente</label>
+          <div style="display: flex; gap: 8px; margin-bottom: 6px;">
+            <input type="text" id="input-resp-tag" class="form-input" placeholder="Ex: Backend REST API, Testes unitários, UI... (Enter)">
+            <button type="button" id="btn-add-resp-tag" class="btn-secondary" style="white-space: nowrap; padding: 6px 14px;">+ Adicionar</button>
+          </div>
+          <div class="quick-resp-suggestions">
+            <span class="quick-resp-pill" data-resp="Desenvolvimento Backend">+ Backend</span>
+            <span class="quick-resp-pill" data-resp="Desenvolvimento Frontend">+ Frontend</span>
+            <span class="quick-resp-pill" data-resp="Testes & QA">+ Testes/QA</span>
+            <span class="quick-resp-pill" data-resp="Auditoria de Segurança">+ Segurança</span>
+            <span class="quick-resp-pill" data-resp="DevOps & Git">+ Git</span>
+          </div>
+          <div id="modal-resp-tags-list" class="modal-resp-tags-list"></div>
+        </div>
+        <!-- Requirement 5: Designate as Orchestrator -->
+        <label class="checkbox-group" style="margin-bottom: 8px;">
+          <input type="checkbox" id="checkbox-is-orchestrator">
+          <span style="color: #eab308; font-weight: 500;">👑 Definir como Chefe / Orquestrador deste Projeto</span>
+        </label>
+
+        <!-- Controle de Execução vs Apenas Observador -->
+        <label class="checkbox-group" style="margin-bottom: 4px;">
+          <input type="checkbox" id="checkbox-is-controllable" checked>
+          <span id="label-is-controllable-text" style="color: #38bdf8; font-weight: 500;">⚡ Sistema Orquestrado / Controlado (Recebe ordens e executa)</span>
+        </label>
+        <div style="font-size: 11px; color: #94a3b8; margin-top: 0; margin-bottom: 12px; margin-left: 24px; line-height: 1.4;">
+          Desmarque para tornar este nó <b>Apenas Observador / Sensor</b> (envia status e visão para ajudar a IA a entender a situação, sem receber ordens nem executar comandos).
+        </div>
+        <label class="checkbox-group">
+          <input type="checkbox" id="input-term-monitor" checked>
+          <span>Monitorar Atividade e Registrar Trilha de Auditoria</span>
+        </label>
+      </div>
+
+      <div id="tab-view-appearance" style="display: none;">
+        <div class="form-group">
+          <label>Tema do Terminal (Cores & Sintaxe)</label>
+          <select id="select-term-theme" class="form-input">
+            <option value="vscode">VS Code Dark+ (Padrão)</option>
+            <option value="tokyo-night">Tokyo Night (Neon Roxo / Azul)</option>
+            <option value="dracula">Dracula (Vampire Dark)</option>
+            <option value="cyberpunk">Cyberpunk 2077 (Amarelo & Verde Neon)</option>
+            <option value="solarized">Solarized Dark (Teal Balanceado)</option>
+            <option value="monokai">Monokai Pro (Alto Contraste Quente)</option>
+            <option value="nord">Nord (Ártico Suave)</option>
+          </select>
+        </div>
+
+        <!-- Live Visual Terminal Theme Preview -->
+        <div class="form-group">
+          <label style="display: flex; justify-content: space-between; align-items: center;">
+            <span>Exemplo Visual em Uso (Live Preview):</span>
+            <span style="font-size: 11px; color: #38bdf8; text-transform: none; font-weight: normal;">Simulação Real-time</span>
+          </label>
+          <div id="theme-preview-box" class="theme-preview-box">
+            <div class="preview-header">
+              <span class="preview-dot red"></span>
+              <span class="preview-dot yellow"></span>
+              <span class="preview-dot green"></span>
+              <span id="preview-theme-title" class="preview-title">VS Code Dark+</span>
+            </div>
+            <div id="theme-preview-terminal" class="preview-terminal">
+              <div class="preview-line user">&gt; you: add a greeting function</div>
+              <div class="preview-line header">Here's the change:</div>
+              <div class="preview-line code"><span class="kwd">func</span> <span class="fn">greet</span>(name <span class="type">string</span>) {</div>
+              <div class="preview-line code">&nbsp;&nbsp;<span class="pkg">fmt</span>.<span class="fn">Printf</span>(<span class="str">"Hello, %s!\n"</span>, name)</div>
+              <div class="preview-line code">}</div>
+              <div class="preview-line info">▾ Thought Process: implementing greeting</div>
+              <div class="preview-line success">✓ compilation successful</div>
+              <div class="preview-line prompt"><span class="ps">PS C:\Projeto&gt;</span> <span class="cursor">█</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Cor de Destaque da Borda</label>
+          <select id="select-term-color" class="form-input">
+            <option value="#3b82f6">Azul Royal (Codex / Padrão)</option>
+            <option value="#a855f7">Roxo Neon (Antigravity)</option>
+            <option value="#ea580c">Laranja (Claude Code)</option>
+            <option value="#10b981">Verde Esmeralda (Shell)</option>
+            <option value="#eab308">Dourado (Orquestrador)</option>
+            <option value="#ec4899">Rosa Choque</option>
+            <option value="#06b6d4">Ciano Elétrico</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Tamanho Inicial</label>
+          <select id="select-term-size" class="form-input">
+            <option value="standard">Padrão (520x320)</option>
+            <option value="compact">Compacto (420x260)</option>
+            <option value="large">Expandido (680x440)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button id="btn-modal-cancel" class="btn-secondary">Cancelar</button>
+        <button id="btn-modal-create" class="btn-primary">Criar Instância</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Orchestrator Dispatch Dialog -->
+  <div id="orchestrator-modal-overlay" class="modal-overlay">
+    <div class="modal-window orchestrator-modal">
+      <div class="modal-title" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <span style="font-size: 20px;">👑</span>
+        <span id="orch-modal-title">Orquestrador Chefe: Formular & Despachar Ordens</span>
+      </div>
+      <div class="quick-start-label" id="orch-modal-subtitle" style="text-align: center; font-size: 11px; color: #94a3b8; margin-bottom: 12px;">
+        O Chefe só pensa, contextualiza e formula ordens com a IA conectada. Ele não executa diretamente, delegando tudo aos nós subordinados.
+      </div>
+
+      <div class="form-group">
+        <label>Objetivo Estratégico ou Missão para os Agentes:</label>
+        <textarea id="orch-modal-prompt" class="form-input form-textarea" rows="4" placeholder="Ex: Crie a rota de autenticação no backend, estruture o login no frontend e valide os testes..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <label style="margin: 0;">Subordinados Destinatários (Seguem Ordens):</label>
+          <div style="font-size: 11px; display: flex; gap: 10px;">
+            <button type="button" id="orch-select-all" class="link-btn" style="color: #38bdf8; background: none; border: none; cursor: pointer;">Selecionar Todos</button>
+            <span style="color: #475569;">|</span>
+            <button type="button" id="orch-select-none" class="link-btn" style="color: #94a3b8; background: none; border: none; cursor: pointer;">Nenhum</button>
+          </div>
+        </div>
+        <div id="orch-target-list" class="orch-target-list">
+          <!-- Populated dynamically with target agent checkboxes -->
+        </div>
+      </div>
+
+      <div class="modal-actions" style="margin-top: 16px;">
+        <span style="font-size: 11px; color: #64748b; align-self: center; margin-right: auto;">Atalho: Ctrl + Enter</span>
+        <button type="button" id="btn-orch-cancel" class="btn-secondary">Cancelar</button>
+        <button type="button" id="btn-orch-send" class="btn-primary" style="background: #eab308; color: #1e293b; font-weight: 600;">⚡ Formular e Despachar Ordens com IA</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 1: Project Browser (Navegador de Projetos) -->
+  <div id="projects-browser-modal-overlay" class="modal-overlay">
+    <div class="modal-window projects-browser-modal">
+      <div class="projects-browser-header">
+        <div class="projects-browser-title-box">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div class="projects-browser-icon-badge">📁</div>
+            <div>
+              <h2 class="projects-modal-title">Navegador de Projetos</h2>
+              <p class="projects-modal-subtitle">Workspaces, Squads de IA e Ambientes em <code>./projects/</code></p>
+            </div>
+          </div>
+          <button id="btn-close-projects-browser" class="modal-close-icon" title="Fechar (Esc)">&times;</button>
+        </div>
+
+        <div class="projects-browser-controls">
+          <div class="projects-search-wrapper">
+            <svg class="search-icon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="projects-search-input" placeholder="Buscar por nome, pasta ou foco..." autocomplete="off">
+          </div>
+          <button id="btn-browser-create-new" class="btn-primary" style="display: flex; align-items: center; gap: 8px; white-space: nowrap;">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>Novo Projeto</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="projects-cards-container" id="projects-cards-grid">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: Criador de Projetos com Foco & Instâncias (Wizard) -->
+  <div id="project-wizard-modal-overlay" class="modal-overlay">
+    <div class="modal-window project-wizard-modal">
+      <div class="projects-browser-title-box" style="margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="projects-browser-icon-badge" style="background: rgba(168, 85, 247, 0.2); border-color: rgba(168, 85, 247, 0.4); color: #c084fc;">🚀</div>
+          <div>
+            <h2 class="projects-modal-title">Novo Projeto com Foco & Squad de IA</h2>
+            <p class="projects-modal-subtitle">Defina o nome, pasta de trabalho e instâncias coordenadas do seu projeto</p>
+          </div>
+        </div>
+        <button id="btn-close-project-wizard" class="modal-close-icon" title="Fechar (Esc)">&times;</button>
+      </div>
+
+      <!-- Step 1: Info básica & CWD -->
+      <div class="wizard-section">
+        <label class="wizard-section-label">1. Identificação & Pasta de Trabalho (CWD)</label>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-size: 12px; color: #cbd5e1; margin-bottom: 4px; display: block;">Nome do Projeto *</label>
+            <input type="text" id="wizard-proj-name" class="form-input" placeholder="Ex: E-Commerce Microservices" required>
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-size: 12px; color: #cbd5e1; margin-bottom: 4px; display: block;">Foco ou Objetivo da IA (Opcional)</label>
+            <input type="text" id="wizard-proj-focus" class="form-input" placeholder="Ex: Refatorar endpoints FastAPI e validar front">
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label" style="font-size: 12px; color: #cbd5e1; margin-bottom: 4px; display: block;">Pasta Raiz do Projeto (Onde as IAs vão editar e rodar comandos) *</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="wizard-proj-cwd" class="form-input" placeholder="C:\Caminho\Do\Projeto" style="flex: 1;" required>
+            <button type="button" id="btn-wizard-browse-cwd" class="btn-secondary" style="display: flex; align-items: center; gap: 6px; white-space: nowrap;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+              <span>📁 Procurar...</span>
+            </button>
+          </div>
+          <span class="field-hint" style="font-size: 11px; color: #64748b; margin-top: 4px; display: block;">A pasta selecionada será gravada no contexto das IAs e nenhuma IA executará varreduras fora dela.</span>
+        </div>
+      </div>
+
+      <!-- Step 2: Templates de Foco de IA -->
+      <div class="wizard-section" style="margin-top: 16px;">
+        <label class="wizard-section-label">2. Escolha o Squad & Foco da IA</label>
+        <div class="squad-templates-grid" id="squad-templates-grid">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+      <!-- Step 3: Customização de Instâncias -->
+      <div class="wizard-section" style="margin-top: 16px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+          <label class="wizard-section-label" style="margin-bottom: 0;">3. Instâncias do Squad Selecionado (Personalize ou Adicione)</label>
+          <button type="button" id="btn-wizard-add-instance" class="btn-secondary" style="font-size: 11px; padding: 4px 10px;">
+            + Adicionar Instância
+          </button>
+        </div>
+        <div class="wizard-instances-list" id="wizard-instances-list">
+          <!-- Rendered dynamically depending on selected template -->
+        </div>
+      </div>
+
+      <div class="modal-actions" style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px;">
+        <button id="btn-wizard-cancel" class="btn-secondary">Cancelar</button>
+        <button id="btn-wizard-submit" class="btn-primary" style="display: flex; align-items: center; gap: 8px;">
+          <span>🚀 Criar e Abrir Workspace</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/static/js/xterm.js?v=3.4"></script>
+  <script src="/static/js/xterm-addon-fit.js?v=3.4"></script>
+  <script src="/static/js/canvas.js?v=3.4"></script>
+  <script src="/static/js/terminal.js?v=3.4"></script>
+  <script src="/static/js/sidebar.js?v=3.4"></script>
+  <script src="/static/js/modal.js?v=3.4"></script>
+  <script src="/static/js/contextmenu.js?v=3.4"></script>
+  <script src="/static/js/projects.js?v=3.4"></script>
+  <script src="/static/js/app.js?v=3.4"></script>
+</body>
+</html>
