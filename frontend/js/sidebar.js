@@ -13,9 +13,9 @@ class MaestriSidebar {
     this.currentProjectName = "maestri-free";
     this.currentProjectSlug = "maestri-free";
     this.workspaces = [
-      { name: "Campanhas Sistema", slug: "campanhas-sistema", icon: "📊", badge: "2", badgeType: "badge-red" },
-      { name: "maestri-free", slug: "maestri-free", icon: "⚡", badge: "4", badgeType: "badge-orange", active: true },
-      { name: "criador-slides-ppt", slug: "criador-slides-ppt", icon: "📑", badge: "1", badgeType: "badge-orange" }
+      { name: "Campanhas Sistema", slug: "campanhas-sistema", icon: "barChart", badge: "2", badgeType: "badge-red" },
+      { name: "maestri-free", slug: "maestri-free", icon: "terminal", badge: "4", badgeType: "badge-orange", active: true },
+      { name: "criador-slides-ppt", slug: "criador-slides-ppt", icon: "document", badge: "1", badgeType: "badge-orange" }
     ];
     this.groups = [];
     this.isCollapsed = true; // drawer retrátil fechado por padrão
@@ -189,9 +189,10 @@ class MaestriSidebar {
       item.className = `workspace-item ${isActive ? 'active' : ''}`;
       item.dataset.slug = ws.slug;
       item.dataset.name = ws.name;
+      const iconSvg = window.MAESTRI_ICONS?.get?.('appearance32', ws.icon) || window.MAESTRI_ICONS?.get?.('topbar', ws.icon) || '';
       item.innerHTML = `
         <div class="ws-item-left">
-          <span class="ws-item-icon">${ws.icon || "📁"}</span>
+          <span class="ws-item-icon">${iconSvg}</span>
           <span class="ws-item-name">${ws.name}</span>
         </div>
         <span class="workspace-item-badge ${ws.badgeType || (isActive ? 'badge-orange' : 'badge-red')}">${ws.badge || ws.node_count || 1}</span>
@@ -210,8 +211,9 @@ class MaestriSidebar {
 
     const activeWs = this.workspaces.find(w => w.slug === this.currentProjectSlug) || this.workspaces[1] || this.workspaces[0];
     if (activeWs) {
+      const iconSvg = window.MAESTRI_ICONS?.get?.('appearance32', activeWs.icon) || window.MAESTRI_ICONS?.get?.('topbar', activeWs.icon) || '';
       pill.innerHTML = `
-        <span class="ws-pill-icon">${activeWs.icon || "📁"}</span>
+        <span class="ws-pill-icon">${iconSvg}</span>
         <span class="ws-pill-name" id="current-project-label">${activeWs.name}</span>
         <span class="ws-pill-badge">${activeWs.badge || activeWs.node_count || 4}</span>
       `;
@@ -343,11 +345,11 @@ class MaestriSidebar {
 
         let modeBadge = "";
         if (node.is_orchestrator) {
-          modeBadge = `<span class="mode-badge orch-badge" title="Chefe / Orquestrador">👑</span>`;
+          modeBadge = `<span class="mode-badge orch-badge" title="Chefe / Orquestrador"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z"/></svg></span>`;
         } else if (node.is_controllable === false) {
-          modeBadge = `<span class="mode-badge observer-badge" title="Apenas Observador / Sensor">👁️</span>`;
+          modeBadge = `<span class="mode-badge observer-badge" title="Apenas Observador / Sensor"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>`;
         } else if (node.type === "terminal") {
-          modeBadge = `<span class="mode-badge controlled-badge" title="Controlado / Executor">⚡</span>`;
+          modeBadge = `<span class="mode-badge controlled-badge" title="Controlado / Executor"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>`;
         }
 
         // Responsibility pills preview (max 2)

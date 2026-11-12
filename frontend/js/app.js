@@ -165,7 +165,7 @@ class MaestriApplication {
               localNode.responsibilities = remoteNode.responsibilities || [];
               const barEl = document.getElementById(`term_resp_bar_${remoteNode.id}`);
               if (barEl) {
-                const respPills = (localNode.responsibilities || []).map(r => `<span class="term-resp-pill" title="Responsabilidade / Papel do Agente">⚡ ${r}</span>`).join('');
+                const respPills = (localNode.responsibilities || []).map(r => `<span class="term-resp-pill" title="Responsabilidade / Papel do Agente">${window.MAESTRI_ICONS?.get?.('appearance32', 'lightning') || ''} ${r}</span>`).join('');
                 barEl.innerHTML = respPills;
               }
             }
@@ -607,13 +607,13 @@ class MaestriApplication {
       el.innerHTML = `
         <div class="note-header">
           <div class="note-title-box">
-            <span class="note-icon">🧠</span>
+            <span class="note-icon">${window.MAESTRI_ICONS?.get?.('appearance32', 'brain') || ''}</span>
             <span class="note-title">${boundTarget ? `Contexto Vivo: ${boundTarget.title}` : 'Memória de Contexto'}</span>
             ${boundTarget ? `<span class="note-bound-tag" title="Vinculado a ${boundTarget.title}">@${boundTarget.title}</span>` : ''}
           </div>
           <div class="note-actions">
-            ${boundTarget ? `<button class="icon-btn note-sync-btn" onclick="window.MaestriApp.syncNoteWithAgent('${node.id}')" title="Sincronizar e Injetar Contexto no Agente">⚡</button>` : ''}
-            <button class="icon-btn" onclick="window.MaestriApp.deleteNode('${node.id}')" style="width: 18px; height: 18px;">✕</button>
+            ${boundTarget ? `<button class="icon-btn note-sync-btn" onclick="window.MaestriApp.syncNoteWithAgent('${node.id}')" title="Sincronizar e Injetar Contexto no Agente">${window.MAESTRI_ICONS?.get?.('appearance32', 'lightning') || ''}</button>` : ''}
+            <button class="icon-btn" onclick="window.MaestriApp.deleteNode('${node.id}')" style="width: 18px; height: 18px;">${window.MAESTRI_ICONS?.get?.('actionbar', 'delete') || ''}</button>
           </div>
         </div>
         <div id="note_content_${node.id}" class="note-body" contenteditable="true" onblur="window.MaestriApp.updateNoteText('${node.id}', this.innerText)">${node.text || "Memória de contexto ativa: objetivos, regras e diretrizes..."}</div>
@@ -623,19 +623,19 @@ class MaestriApplication {
       el.className += ` portal-node ${isObserver ? 'is-observer-node' : ''}`;
       el.style.width = `${node.width || 480}px`;
       el.style.height = `${node.height || 340}px`;
-      const portalModeBadge = `<span id="portal_mode_badge_${node.id}" class="mode-badge ${isObserver ? 'observer-badge' : 'controlled-badge'}" title="${isObserver ? 'Apenas Observador / Sensor Web (Clique para tornar Controlado)' : 'Navegador Controlado (Clique para tornar Apenas Observador)'}" onclick="window.MaestriApp.toggleControllable('${node.id}', event)">${isObserver ? '👁️ OBSERVAÇÃO' : '⚡ CONTROLADO'}</span>`;
+      const portalModeBadge = `<span id="portal_mode_badge_${node.id}" class="mode-badge ${isObserver ? 'observer-badge' : 'controlled-badge'}" title="${isObserver ? 'Apenas Observador / Sensor Web (Clique para tornar Controlado)' : 'Navegador Controlado (Clique para tornar Apenas Observador)'}" onclick="window.MaestriApp.toggleControllable('${node.id}', event)">${isObserver ? `${window.MAESTRI_ICONS?.get?.('appearance32', 'eye') || ''} OBSERVAÇÃO` : `${window.MAESTRI_ICONS?.get?.('appearance32', 'lightning') || ''} CONTROLADO`}</span>`;
       el.innerHTML = `
         <div class="portal-bar">
           <div style="display: flex; align-items: center; gap: 6px;">
-            <span style="font-size: 11px; color: #38bdf8; font-weight: 600;">🌐 Navegador</span>
+            <span style="font-size: 11px; color: #38bdf8; font-weight: 600;">${window.MAESTRI_ICONS?.get?.('topbar', 'portal') || ''} Navegador</span>
             ${portalModeBadge}
           </div>
           <input type="text" class="portal-url" value="${node.url || 'https://google.com'}" onchange="window.MaestriApp.updatePortalUrl('${node.id}', this.value)">
           <div style="display: flex; align-items: center; gap: 4px;">
             <button class="icon-btn mode-toggle-btn ${isObserver ? 'is-observer' : 'is-controlled'}" id="portal_mode_btn_${node.id}" title="${isObserver ? 'Modo Observador Ativo (Ajuda a IA a enxergar a situação). Clique para Ativar Modo Controlado' : 'Modo Controlado Ativo. Clique para Tornar Apenas Observador'}" onclick="window.MaestriApp.toggleControllable('${node.id}', event)">
-              ${isObserver ? '👁️' : '🎮'}
+              ${isObserver ? window.MAESTRI_ICONS?.get?.('appearance32', 'eye') || '' : window.MAESTRI_ICONS?.get?.('appearance32', 'sparkle') || ''}
             </button>
-            <button class="icon-btn" onclick="window.MaestriApp.deleteNode('${node.id}')">✕</button>
+            <button class="icon-btn" onclick="window.MaestriApp.deleteNode('${node.id}')">${window.MAESTRI_ICONS?.get?.('actionbar', 'delete') || ''}</button>
           </div>
         </div>
         <iframe class="portal-frame" src="${node.url}"></iframe>
@@ -735,7 +735,7 @@ class MaestriApplication {
 
       // Update responsibilities bar
       let respBar = el.querySelector(".term-resp-bar");
-      const respPills = (node.responsibilities || []).map(r => `<span class="term-resp-pill" title="Responsabilidade / Papel do Agente">⚡ ${r}</span>`).join('');
+      const respPills = (node.responsibilities || []).map(r => `<span class="term-resp-pill" title="Responsabilidade / Papel do Agente">${window.MAESTRI_ICONS?.get?.('appearance32', 'lightning') || ''} ${r}</span>`).join('');
       if (respBar) {
         respBar.innerHTML = respPills;
         respBar.style.display = respPills ? "flex" : "none";
@@ -767,7 +767,7 @@ class MaestriApplication {
     }
   }
 
-  // Toggle node between Orchestrated/Controllable Worker (⚡) and Observer/Sensor Only (👁️)
+  // Toggle node between Orchestrated/Controllable Worker and Observer/Sensor Only
   toggleControllable(nodeId, event) {
     if (event) event.stopPropagation();
     const node = this.canvas.nodes.find(n => n.id === nodeId);
@@ -779,9 +779,9 @@ class MaestriApplication {
     this.triggerAutoSave();
 
     if (node.is_controllable === false) {
-      this.showToast(`👁️ "${node.title || 'Nó'}" agora é Apenas Observador (ajuda a IA a enxergar a situação; não recebe ordens).`);
+      this.showToast(`"${node.title || 'Nó'}" agora é Apenas Observador (ajuda a IA a enxergar a situação; não recebe ordens).`);
     } else {
-      this.showToast(`⚡ "${node.title || 'Nó'}" ativado como Sistema Controlado (pronto para receber ordens e executar tarefas).`);
+      this.showToast(`"${node.title || 'Nó'}" ativado como Sistema Controlado (pronto para receber ordens e executar tarefas).`);
     }
   }
 
@@ -800,14 +800,14 @@ class MaestriApplication {
       if (badge) {
         if (isObserver) {
           badge.className = "mode-badge observer-badge";
-          badge.innerHTML = "👁️ OBSERVAÇÃO";
+          badge.innerHTML = `${window.MAESTRI_ICONS?.get?.('appearance32', 'eye') || ''} OBSERVAÇÃO`;
           badge.title = "Nó em Modo Observador: Apenas visão e telemetria para a IA. Não recebe ordens nem comandos. Clique para alternar para Controlado.";
           badge.style.display = "inline-flex";
         } else if (node.is_orchestrator) {
           badge.style.display = "none";
         } else {
           badge.className = "mode-badge controlled-badge";
-          badge.innerHTML = "⚡ CONTROLADO";
+          badge.innerHTML = `${window.MAESTRI_ICONS?.get?.('appearance32', 'lightning') || ''} CONTROLADO`;
           badge.title = "Nó Controlado: Executa ordens do Chefe. Clique para alternar para Apenas Observador.";
           badge.style.display = "inline-flex";
         }
@@ -816,7 +816,7 @@ class MaestriApplication {
       const btn = el.querySelector(`#term_mode_btn_${nodeId}`);
       if (btn) {
         btn.className = `icon-btn mode-toggle-btn ${isObserver ? 'is-observer' : 'is-controlled'}`;
-        btn.innerHTML = isObserver ? "👁️" : "🎮";
+        btn.innerHTML = isObserver ? window.MAESTRI_ICONS?.get?.('appearance32', 'eye') || '' : window.MAESTRI_ICONS?.get?.('appearance32', 'sparkle') || '';
         btn.title = isObserver
           ? "Modo Observador Ativo (Ajuda a IA a enxergar, mas NÃO recebe ordens). Clique para Tornar Controlado"
           : "Modo Controlado Ativo (Recebe ordens do Chefe e executa). Clique para Tornar Apenas Observador";
@@ -825,13 +825,13 @@ class MaestriApplication {
       const badge = el.querySelector(`#portal_mode_badge_${nodeId}`);
       if (badge) {
         badge.className = `mode-badge ${isObserver ? 'observer-badge' : 'controlled-badge'}`;
-        badge.innerHTML = isObserver ? "👁️ OBSERVAÇÃO" : "⚡ CONTROLADO";
+        badge.innerHTML = isObserver ? `${window.MAESTRI_ICONS?.get?.('appearance32', 'eye') || ''} OBSERVAÇÃO` : `${window.MAESTRI_ICONS?.get?.('appearance32', 'lightning') || ''} CONTROLADO`;
         badge.title = isObserver ? "Apenas Observador / Sensor Web" : "Navegador Controlado";
       }
       const btn = el.querySelector(`#portal_mode_btn_${nodeId}`);
       if (btn) {
         btn.className = `icon-btn mode-toggle-btn ${isObserver ? 'is-observer' : 'is-controlled'}`;
-        btn.innerHTML = isObserver ? "👁️" : "🎮";
+        btn.innerHTML = isObserver ? window.MAESTRI_ICONS?.get?.('appearance32', 'eye') || '' : window.MAESTRI_ICONS?.get?.('appearance32', 'sparkle') || '';
         btn.title = isObserver
           ? "Modo Observador Ativo. Clique para Ativar Modo Controlado"
           : "Modo Controlado Ativo. Clique para Tornar Apenas Observador";
@@ -867,7 +867,7 @@ class MaestriApplication {
       ? termNode.responsibilities.join(", ")
       : (termNode.is_orchestrator ? "Orquestrador Chefe (Formula & Delega)" : "Executor Técnico");
 
-    const initialText = `🧠 [Contexto & Memória: ${termNode.title}]\n` +
+    const initialText = `[Contexto & Memória: ${termNode.title}]\n` +
       `• Papel Atribuído: ${respText}\n` +
       `• Missão Ativa: [Defina a meta deste agente]\n` +
       `• Regras & Restrições: [Padrões de projeto, diretrizes]\n` +
@@ -900,7 +900,7 @@ class MaestriApplication {
     this.canvas.selectNode(noteId);
     this.sidebar.updateNodeList(this.canvas.nodes);
     this.updateAllConnectionStatus();
-    this.showToast(`🧠 Anotação de contexto criada e vinculada a "${termNode.title}"!`);
+    this.showToast(`Anotação de contexto criada e vinculada a "${termNode.title}"!`);
     this.triggerAutoSave();
   }
 
@@ -921,13 +921,13 @@ class MaestriApplication {
 
     if (termSession && termSession.ws && termSession.ws.readyState === WebSocket.OPEN) {
       const banner = `\r\n\x1b[38;2;245;158;11m╔═══════════════════════════════════════════════════════════════════════════════════════╗\x1b[0m\r\n` +
-        `\x1b[38;2;245;158;11m║ 🧠 MEMÓRIA DE CONTEXTO VIVO SINCRONIZADA                                              ║\x1b[0m\r\n` +
+        `\x1b[38;2;245;158;11m║ MEMÓRIA DE CONTEXTO VIVO SINCRONIZADA                                              ║\x1b[0m\r\n` +
         `\x1b[38;2;245;158;11m╚═══════════════════════════════════════════════════════════════════════════════════════╝\x1b[0m\r\n` +
         `\x1b[33m${note.text}\x1b[0m\r\n` +
         `\x1b[38;2;16;185;129m[OK] Contexto gravado e ativo na memória do agente.\x1b[0m\r\n\r\n`;
       termSession.term?.write(banner);
       this.triggerCommunicationVisual(noteId, [termId], 2500);
-      this.showToast(`🧠 Contexto sincronizado com "${termNode?.title || 'Terminal'}"!`);
+      this.showToast(`Contexto sincronizado com "${termNode?.title || 'Terminal'}"!`);
     } else {
       this.showToast(`Terminal "${termNode?.title || 'Terminal'}" não está conectado ao WebSocket.`);
     }
@@ -1065,9 +1065,9 @@ class MaestriApplication {
     this.canvas.renderEdges();
     this.sidebar.updateNodeList(this.canvas.nodes);
     this.updateAllConnectionStatus();
-    this.showToast(newState ? `👑 "${node.title}" definido como CHEFE / Orquestrador.` : `Função de Chefe removida de "${node.title}".`);
+    this.showToast(newState ? `"${node.title}" definido como CHEFE / Orquestrador.` : `Função de Chefe removida de "${node.title}".`);
 
-    this.showToast(newState ? `👑 "${node.title}" agora é o CHEFE / ORQUESTRADOR!` : `Função de orquestrador removida.`);
+    this.showToast(newState ? `"${node.title}" agora é o CHEFE / ORQUESTRADOR!` : `Função de orquestrador removida.`);
     this.triggerAutoSave();
   }
 
@@ -1133,7 +1133,7 @@ class MaestriApplication {
   async triggerOrchestrationLoop() {
     const orchestratorNode = this.canvas.nodes.find(n => n.is_orchestrator);
     if (!orchestratorNode) {
-      this.showToast("Nenhum nó definido como CHEFE. Clique no ícone 👑 de um terminal para defini-lo.");
+      this.showToast("Nenhum nó definido como CHEFE. Clique no ícone de coroa de um terminal para defini-lo.");
       return;
     }
     this.openOrchestratorModal(orchestratorNode.id);
@@ -1181,8 +1181,8 @@ class MaestriApplication {
           <label for="orch_target_${targetId}" class="orch-target-label">
             <span style="font-weight: 500;">${targetNode.title || (targetNode.type === 'portal' ? 'Navegador Web' : 'Terminal')}</span>
             ${isObserver 
-              ? `<span class="orch-target-role observer-tag" title="Este nó atua como sensor/olhos. A IA usará seu status para entender a situação, sem enviar comandos para ele.">👁️ Observador (Somente Leitura)</span>`
-              : `<span class="orch-target-role controllable-tag">⚡ ${targetNode.preset || 'Executor'}</span>`
+              ? `<span class="orch-target-role observer-tag" title="Este nó atua como sensor/olhos. A IA usará seu status para entender a situação, sem enviar comandos para ele.">${window.MAESTRI_ICONS?.get?.('appearance32', 'eye') || ''} Observador (Somente Leitura)</span>`
+              : `<span class="orch-target-role controllable-tag">${window.MAESTRI_ICONS?.get?.('appearance32', 'lightning') || ''} ${targetNode.preset || 'Executor'}</span>`
             }
           </label>
         `;
@@ -1242,7 +1242,7 @@ class MaestriApplication {
 
     const orchId = this.activeOrchestratorNodeId;
     this.closeOrchestratorModal();
-    this.showToast(`👑 Chefe pensando com a IA e formulando ordens...`);
+    this.showToast(`Chefe pensando com a IA e formulando ordens...`);
     
     // 1. Immediately activate vibrant Dispatching state (Chefe glow amber + edge flow)
     this.setOrchestrationVisualState(orchId, selectedTargets, "dispatching");
@@ -1260,7 +1260,7 @@ class MaestriApplication {
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.status === "ok") {
         const count = data.delivered_to || selectedTargets.length;
-        this.showToast(`👑 Ordens despachadas para ${count} agente(s)! Subordinados em processamento ativo.`);
+        this.showToast(`Ordens despachadas para ${count} agente(s)! Subordinados em processamento ativo.`);
 
         // 2. Transition immediately into active Processing state (Subordinates glow green + green edge flow)
         this.setOrchestrationVisualState(orchId, selectedTargets, "processing");
@@ -1302,7 +1302,7 @@ class MaestriApplication {
         this._isDispatchingOrchestrator = false;
         if (btnSend) {
           btnSend.disabled = false;
-          btnSend.textContent = "⚡ Formular e Despachar Ordens com IA";
+          btnSend.textContent = `${window.MAESTRI_ICONS?.get?.('appearance32', 'lightning') || ''} Formular e Despachar Ordens com IA`;
         }
       }, 1500);
     }
@@ -1750,7 +1750,7 @@ class MaestriApplication {
         this.currentWorkingDirectory = data.path;
         this.updateWorkspaceDirectoryUI(data.path);
         const cleanName = (data.folder_name || "").replace(/^[📁📂\s]+/, '').trim();
-        this.showToast(`📁 Pasta de trabalho: "${cleanName}". IAs e terminais agora têm acesso direto!`);
+        this.showToast(`Pasta de trabalho: "${cleanName}". IAs e terminais agora têm acesso direto!`);
 
         // Update prefill in modal
         const cwdInput = document.getElementById("input-term-cwd");

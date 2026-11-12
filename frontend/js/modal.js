@@ -22,7 +22,7 @@ class MaestriModalManager {
     this.responsibilities = [];
     this.isEditMode = false;
     this.editingNodeId = null;
-    this.selectedIcon = "💻";
+    this.selectedIcon = "laptop";
     this.selectedAppearanceIcon = "prompt";
     this.selectedTheme = "vscode";
     this._initModal();
@@ -49,7 +49,7 @@ class MaestriModalManager {
         grid.querySelectorAll(".appearance-icon-btn").forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
         this.selectedAppearanceIcon = item.id;
-        this.selectedIcon = item.svg;
+        this.selectedIcon = item.id;
         const iconInput = document.getElementById("input-term-icon");
         if (iconInput) iconInput.value = item.id;
       });
@@ -127,7 +127,7 @@ class MaestriModalManager {
       btn.addEventListener("click", () => {
         document.querySelectorAll(".quick-icon-btn").forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
-        this.selectedIcon = btn.dataset.icon || "💻";
+        this.selectedIcon = btn.dataset.icon || "laptop";
         const iconInput = document.getElementById("input-term-icon");
         if (iconInput) iconInput.value = this.selectedIcon;
       });
@@ -135,7 +135,7 @@ class MaestriModalManager {
 
     const iconInput = document.getElementById("input-term-icon");
     iconInput?.addEventListener("input", () => {
-      const val = iconInput.value.trim() || "💻";
+      const val = iconInput.value.trim() || "laptop";
       this.selectedIcon = val;
       document.querySelectorAll(".quick-icon-btn").forEach(b => {
         b.classList.toggle("active", b.dataset.icon === val);
@@ -197,7 +197,7 @@ class MaestriModalManager {
         } catch (e) {
           console.warn("Folder picker error:", e);
         } finally {
-          btnBrowseCwd.textContent = "📂 Procurar...";
+          btnBrowseCwd.innerHTML = `${window.MAESTRI_ICONS?.get?.('topbar', 'folder') || ''} Procurar...`;
         }
       });
     }
@@ -288,7 +288,7 @@ class MaestriModalManager {
       tag.className = "resp-badge-item";
       tag.innerHTML = `
         <span>${resp}</span>
-        <button type="button" class="resp-del-btn" data-index="${idx}" title="Remover responsabilidade">✕</button>
+        <button type="button" class="resp-del-btn" data-index="${idx}" title="Remover responsabilidade">${window.MAESTRI_ICONS?.get?.('actionbar', 'delete') || ''}</button>
       `;
       tag.querySelector(".resp-del-btn").addEventListener("click", (e) => {
         e.stopPropagation();
@@ -307,7 +307,7 @@ class MaestriModalManager {
     this.targetY = targetY;
     this.targetWidth = targetWidth;
     this.targetHeight = targetHeight;
-    this.selectedIcon = "💻";
+    this.selectedIcon = "laptop";
     this.selectedTheme = "vscode";
     this.responsibilities = [];
 
@@ -399,7 +399,7 @@ class MaestriModalManager {
     this.isEditMode = true;
     this.editingNodeId = node.id;
     this.selectedPreset = node.preset || "shell";
-    this.selectedIcon = node.icon || "💻";
+    this.selectedIcon = node.icon || "laptop";
     this.selectedTheme = node.terminalTheme || "vscode";
     this.responsibilities = [...(node.responsibilities || [])];
 
@@ -504,8 +504,8 @@ class MaestriModalManager {
     if (preset === "antigravity") {
       if (nameInput) nameInput.value = "Antigravity";
       if (cmdInput) cmdInput.value = "agy";
-      if (iconInput) iconInput.value = "✨";
-      this.selectedIcon = "✨";
+      if (iconInput) iconInput.value = "sparkle";
+      this.selectedIcon = "sparkle";
       if (modelSelect) modelSelect.value = "claude-opus-5-5";
       if (tempInput) { tempInput.value = "0.5"; delete tempInput.dataset.userSet; }
       if (tokensInput) { tokensInput.value = "8192"; delete tokensInput.dataset.userSet; }
@@ -513,8 +513,8 @@ class MaestriModalManager {
     } else if (preset === "claude") {
       if (nameInput) nameInput.value = "Claude Code";
       if (cmdInput) cmdInput.value = "claude";
-      if (iconInput) iconInput.value = "🟣";
-      this.selectedIcon = "🟣";
+      if (iconInput) iconInput.value = "brain";
+      this.selectedIcon = "brain";
       if (modelSelect) modelSelect.value = "claude-sonnet-5-5";
       if (tempInput) { tempInput.value = "0.7"; delete tempInput.dataset.userSet; }
       if (tokensInput) { tokensInput.value = "8192"; delete tokensInput.dataset.userSet; }
@@ -522,8 +522,8 @@ class MaestriModalManager {
     } else if (preset === "codex") {
       if (nameInput) nameInput.value = "Codex";
       if (cmdInput) cmdInput.value = "codex";
-      if (iconInput) iconInput.value = "🟢";
-      this.selectedIcon = "🟢";
+      if (iconInput) iconInput.value = "chip";
+      this.selectedIcon = "chip";
       if (modelSelect) modelSelect.value = "gpt-4o";
       if (tempInput) { tempInput.value = "0.3"; delete tempInput.dataset.userSet; }
       if (tokensInput) { tokensInput.value = "4096"; delete tokensInput.dataset.userSet; }
@@ -531,8 +531,8 @@ class MaestriModalManager {
     } else if (preset === "deepseek") {
       if (nameInput) nameInput.value = "DeepSeek";
       if (cmdInput) cmdInput.value = "deepseek";
-      if (iconInput) iconInput.value = "🔵";
-      this.selectedIcon = "🔵";
+      if (iconInput) iconInput.value = "cpu";
+      this.selectedIcon = "cpu";
       if (modelSelect) modelSelect.value = "deepseek-coder";
       if (tempInput) { tempInput.value = "0.2"; delete tempInput.dataset.userSet; }
       if (tokensInput) { tokensInput.value = "8192"; delete tokensInput.dataset.userSet; }
@@ -540,8 +540,8 @@ class MaestriModalManager {
     } else if (preset === "shell") {
       if (nameInput) nameInput.value = "PowerShell";
       if (cmdInput) cmdInput.value = "powershell.exe";
-      if (iconInput) iconInput.value = "💻";
-      this.selectedIcon = "💻";
+      if (iconInput) iconInput.value = "laptop";
+      this.selectedIcon = "laptop";
       if (modelSelect) modelSelect.value = "local-shell";
       if (tempInput) { tempInput.value = "0"; delete tempInput.dataset.userSet; }
       if (tokensInput) { tokensInput.value = "0"; delete tokensInput.dataset.userSet; }
@@ -579,7 +579,7 @@ class MaestriModalManager {
     const color = document.getElementById("select-term-color")?.value || "#3b82f6";
     const size = document.getElementById("select-term-size")?.value || "standard";
     const theme = document.getElementById("select-term-theme")?.value || this.selectedTheme || "vscode";
-    const icon = document.getElementById("input-term-icon")?.value || this.selectedIcon || "💻";
+    const icon = document.getElementById("input-term-icon")?.value || this.selectedIcon || "laptop";
 
     // Agent tab data
     const aiModel = document.getElementById("select-agent-model")?.value || "claude-sonnet-5-5";

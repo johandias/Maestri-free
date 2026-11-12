@@ -14,7 +14,7 @@ class MaestriProjectsManager {
     this.templates = {
       fullstack: {
         id: "fullstack",
-        icon: "👑",
+        icon: "badge",
         title: "Squad Fullstack",
         badge: "Recomendado",
         desc: "Orquestrador Chefe + Backend API + Frontend Web + Observador PowerShell. Completo e coordenado.",
@@ -28,7 +28,7 @@ class MaestriProjectsManager {
       },
       frontend_ui: {
         id: "frontend_ui",
-        icon: "🎨",
+        icon: "palette",
         title: "Squad Frontend & UI/UX",
         badge: "Design & Telas",
         desc: "Chefe Orquestrador + Claude Frontend + Auditor Visual / Responsividade.",
@@ -41,7 +41,7 @@ class MaestriProjectsManager {
       },
       backend_api: {
         id: "backend_api",
-        icon: "⚙️",
+        icon: "hammer",
         title: "Squad Backend & APIs",
         badge: "APIs & Dados",
         desc: "Chefe Orquestrador + API Designer + Backend Dev + Persistência de Dados.",
@@ -54,7 +54,7 @@ class MaestriProjectsManager {
       },
       single_agent: {
         id: "single_agent",
-        icon: "🚀",
+        icon: "lightning",
         title: "Agente Especialista Único",
         badge: "Focado & Rápido",
         desc: "1 Terminal Focado de Alta Precisão conectado à sua Nota de Contexto Viva.",
@@ -65,7 +65,7 @@ class MaestriProjectsManager {
       },
       blank: {
         id: "blank",
-        icon: "🛠️",
+        icon: "screwdriver",
         title: "Workspace em Branco",
         badge: "Customizado",
         desc: "Tela limpa para montar instâncias, nós e blocos personalizados livremente.",
@@ -170,7 +170,7 @@ class MaestriProjectsManager {
     if (!list || list.length === 0) {
       grid.innerHTML = `
         <div class="projects-empty-state">
-          <div style="font-size: 32px; margin-bottom: 8px;">📂</div>
+          <div style="font-size: 32px; margin-bottom: 8px;">${window.MAESTRI_ICONS?.get?.('topbar', 'folder') || ''}</div>
           <div style="font-size: 15px; font-weight: 600; color: #cbd5e1;">Nenhum projeto encontrado</div>
           <p style="font-size: 12px; color: #94a3b8; max-width: 320px; margin: 6px auto 14px;">Crie um novo projeto com instâncias de IA coordenadas e foco específico.</p>
           <button class="btn-primary" onclick="window.MaestriProjects.openWizard()">+ Criar Primeiro Projeto</button>
@@ -184,7 +184,7 @@ class MaestriProjectsManager {
       const card = document.createElement("div");
       card.className = `project-card ${p.is_active ? "is-active" : ""}`;
 
-      const templateInfo = this.templates[p.template] || { icon: "📁", title: p.template || "Projeto" };
+      const templateInfo = this.templates[p.template] || { icon: "folder", title: p.template || "Projeto" };
       const modifiedDate = p.modified ? new Date(p.modified * 1000).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "";
 
       const shortCwd = p.cwd ? (p.cwd.length > 45 ? "..." + p.cwd.slice(-42) : p.cwd) : "Pasta padrão do sistema";
@@ -199,7 +199,7 @@ class MaestriProjectsManager {
             </div>
           </div>
           <div class="project-card-badges">
-            ${p.is_active ? `<span class="badge-status-active">🟢 Ativo</span>` : `<span class="badge-status-idle">📁 Inativo</span>`}
+            ${p.is_active ? `<span class="badge-status-active"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/></svg> Ativo</span>` : `<span class="badge-status-idle"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> Inativo</span>`}
           </div>
         </div>
 
@@ -211,19 +211,19 @@ class MaestriProjectsManager {
 
           ${p.focus ? `
             <div class="project-card-focus-tag" title="Foco da IA: ${this.escapeHtml(p.focus)}">
-              🎯 <span>${this.escapeHtml(p.focus)}</span>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg> <span>${this.escapeHtml(p.focus)}</span>
             </div>
           ` : `
             <div class="project-card-focus-tag" style="opacity: 0.6;">
-              🎯 <span>${templateInfo.title}</span>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg> <span>${templateInfo.title}</span>
             </div>
           `}
 
           <div class="project-card-stats-row">
-            <span class="stat-item" title="Terminais Conectados">💻 <strong>${p.terminals_count ?? 0}</strong> term</span>
-            <span class="stat-item" title="Notas de Contexto Vivas">🧠 <strong>${p.notes_count ?? 0}</strong> notas</span>
-            <span class="stat-item" title="Conexões Direcionadas">⚡ <strong>${p.edges_count ?? 0}</strong> conexões</span>
-            ${modifiedDate ? `<span class="stat-date" title="Última modificação">🕒 ${modifiedDate}</span>` : ""}
+            <span class="stat-item" title="Terminais Conectados"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg> <strong>${p.terminals_count ?? 0}</strong> term</span>
+            <span class="stat-item" title="Notas de Contexto Vivas"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-2.04zm5 0A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-2.04z"/></svg> <strong>${p.notes_count ?? 0}</strong> notas</span>
+            <span class="stat-item" title="Conexões Direcionadas"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> <strong>${p.edges_count ?? 0}</strong> conexões</span>
+            ${modifiedDate ? `<span class="stat-date" title="Última modificação"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${modifiedDate}</span>` : ""}
           </div>
         </div>
 
@@ -525,7 +525,7 @@ class MaestriProjectsManager {
           console.warn("Folder picker error:", e);
         } finally {
           btnBrowseCwd.disabled = false;
-          btnBrowseCwd.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg><span>📁 Procurar...</span>`;
+          btnBrowseCwd.innerHTML = `${window.MAESTRI_ICONS?.get?.('topbar', 'folder') || ''}<span>Procurar...</span>`;
         }
       });
     }
@@ -566,9 +566,10 @@ class MaestriProjectsManager {
       card.className = `squad-template-card ${tmpl.id === this.selectedTemplate ? "selected" : ""}`;
       card.dataset.id = tmpl.id;
 
+      const iconSvg = window.MAESTRI_ICONS?.get?.('appearance32', tmpl.icon) || window.MAESTRI_ICONS?.get?.('actionbar', tmpl.icon) || '';
       card.innerHTML = `
         <div class="squad-tmpl-header">
-          <span class="squad-tmpl-icon">${tmpl.icon}</span>
+          <span class="squad-tmpl-icon">${iconSvg}</span>
           <span class="squad-tmpl-badge">${tmpl.badge}</span>
         </div>
         <div class="squad-tmpl-title">${tmpl.title}</div>
@@ -629,7 +630,7 @@ class MaestriProjectsManager {
         <div class="inst-row-left">
           <input type="checkbox" class="inst-checkbox" ${inst.enabled ? "checked" : ""} data-idx="${idx}" title="Incluir no projeto">
           <span class="inst-role-badge ${inst.is_orchestrator ? "badge-orch" : (inst.preset === "antigravity" ? "badge-gemini" : "badge-shell")}">
-            ${inst.is_orchestrator ? "👑 Chefe" : (inst.is_controllable ? "⚡ Executor" : "👁️ Observador")}
+            ${inst.is_orchestrator ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z"/></svg> Chefe' : (inst.is_controllable ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Executor' : '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Observador')}
           </span>
         </div>
 
@@ -764,7 +765,7 @@ class MaestriProjectsManager {
     } finally {
       if (btnSubmit) {
         btnSubmit.disabled = false;
-        btnSubmit.innerHTML = `<span>🚀 Criar e Abrir Workspace</span>`;
+        btnSubmit.innerHTML = `<span>${window.MAESTRI_ICONS?.get?.('appearance32', 'lightning') || ''} Criar e Abrir Workspace</span>`;
       }
     }
   }

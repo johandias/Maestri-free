@@ -118,7 +118,7 @@ class MaestriContextMenu {
     const items = [
       {
         icon: this._icon("note-add"),
-        label: "🧠 Criar Anotação de Contexto Vinculada",
+        label: "Criar Anotação de Contexto Vinculada",
         action: () => app.createConnectedContextNote(nodeId)
       },
       { type: "divider" },
@@ -166,22 +166,22 @@ class MaestriContextMenu {
       { type: "divider" },
       {
         icon: this._icon(isOrch ? "crown-filled" : "crown"),
-        label: isOrch ? "Remover Função de Chefe" : "👑 Definir como Chefe / Orquestrador",
+        label: isOrch ? "Remover Função de Chefe" : "Definir como Chefe / Orquestrador",
         action: () => app.toggleOrchestrator(nodeId)
       },
       {
         icon: isObserver ? this._icon("eye") : this._icon("zap"),
-        label: isObserver ? "⚡ Ativar Modo Controlado (Executa Ordens)" : "👁️ Alternar para Apenas Observador (Somente Leitura)",
+        label: isObserver ? "Ativar Modo Controlado (Executa Ordens)" : "Alternar para Apenas Observador (Somente Leitura)",
         action: () => app.toggleControllable(nodeId)
       },
       ...(isOrch ? [{
         icon: this._icon("zap"),
-        label: "⚡ Formular e Despachar Ordens com IA",
+        label: "Formular e Despachar Ordens com IA",
         action: () => app.openOrchestratorModal(nodeId)
       }] : []),
       {
         icon: this._icon("settings"),
-        label: "⚙️ Configurações do Terminal...",
+        label: "Configurações do Terminal...",
         action: () => app.openEditTerminalModal(nodeId)
       },
       {
@@ -234,7 +234,7 @@ class MaestriContextMenu {
       const items = [
         {
           icon: this._icon("sync"),
-          label: "⚡ Sincronizar Contexto com Agente",
+          label: "Sincronizar Contexto com Agente",
           action: () => app.syncNoteWithAgent(nodeId)
         },
         {
@@ -264,7 +264,7 @@ class MaestriContextMenu {
       const items = [
         {
           icon: isObserver ? this._icon("zap") : this._icon("eye"),
-          label: isObserver ? "⚡ Ativar Modo Controlado (Navegação)" : "👁️ Alternar para Apenas Observador (Somente Leitura)",
+          label: isObserver ? "Ativar Modo Controlado (Navegação)" : "Alternar para Apenas Observador (Somente Leitura)",
           action: () => app.toggleControllable(nodeId)
         },
         { type: "divider" },
@@ -391,7 +391,7 @@ class MaestriContextMenu {
             width: 540,
             height: 340,
             color: "#a855f7",
-            icon: "✨"
+            icon: "sparkle"
           });
         }
       },
